@@ -64,22 +64,10 @@ vec3 i_testTexture(vec2 uv){
                vec3(uv.xy,0.0));
 }
 
-/* Normalized pixel coordinates (y in [-1,1], x follows aspect ratio)
- *
- * Algorithm:
- *
- * The math reads, starting from within the first parentheses:
- * Center pixels, then divide in order to scale centered x and y
- * uniformly so that the screen coordinate of y, in particular,
- * remains bounded by -1 and 1. A beginner should notice the use
- * of "yy" in "res.yy" - Repeating coordinate identifiers 
- * is business as usual. It is called swizzling. "V.xyyx", "V.zzz",
- * and "V.zxxx" are all very fine ways to access a vector named V.
- * And here "V.rag" means the same as "V.xwy". In the long run, you
- * will want to read the specification.
+/* Normalized pixel coordinates (y in [-1,1], x follows aspect ratio).
  */
-vec2 i_screenCoord(vec2 pix, vec2 res){
-    return (pix - res / 2.0) / (res.yy / 2.0);
+vec2 i_screenCoord(vec2 pix, vec2 resolution){
+    return (2*pix - resolution) / resolution.yy;
 }
 
 /* Ray-trace to a sphere.
