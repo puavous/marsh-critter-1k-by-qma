@@ -115,11 +115,11 @@ void main()
     //fragColor = vec4(i_testTexture(s),1); return;
 
     //vec4 sph1 = vec4(sin(iTime),cos(iTime),0,1);
-    vec4 sph1 = vec4(3*sin(iTime),3*cos(iTime),iTime,1);
-    vec3 eye = vec3(0,0,20);
-    vec3 rd = normalize(vec3(s.xy, -3));
+    vec4 sph1 = vec4(3*sin(iTime),3*cos(iTime),10*sin(iTime*3),1);
+    vec3 eye = vec3(0,0,30);
+    vec3 rd = normalize(vec3(s.xy, -4));
     Hit h = rtSphere(eye, rd, 0., sph1);
-    col = h.n;
+    col = sin(h.n*16);
 //    vec3 point = eye+t*rd;    
 //    col = point;
     
