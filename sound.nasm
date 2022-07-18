@@ -16,14 +16,15 @@ BITS 32
 ;; It conveniently defines the audio format, sample rate etc.
 global  _RIFF_header
 ;; FIXME: Nice "SYNTH_CAP_NCHANNELS" etc for convenience.
+	AUDIO_DURATION_SAMPLES equ 0x800000    ; Approx 174 seconds at 48kHz
 	AUDIO_NUMCHANNELS equ 1
 SEGMENT	.rdata
     _RIFF_header:
     ;; /* "RIFF" */
 	dd "RIFF"
     ;;  /* Chunk size (whole file sz -8) */ AUDIO_BUF_SIZE_IN_BYTES + 36,
-    ;;  /* Maybe we lie.. just a bit: */
-	dd 04000000h
+    ;;  /* Maybe we lie.. just a bit.. sndPlaySound() doesn't care: */
+	dd AUDIO_DURATION_SAMPLES * AUDIO_NUMCHANNELS * 4
     ;;  /* "WAVE" .. means there will be "fmt " and "data" after. */
 	dd "WAVE"
     ;; /* Format subchunk: */
@@ -42,7 +43,7 @@ sample_rate:
     ;; /* "data" */ 0x61746164,
 	dd "data"
     ;;/* Subchunk size */
-	dd 04000000h
+	dd AUDIO_DURATION_SAMPLES * AUDIO_NUMCHANNELS * 4
 
 ;; Make data global, so crinkler can shift things around.
 ;;;  ------------------------- synth constants
@@ -92,18 +93,21 @@ SEGMENT .bss
 global syn_delay_line_space
 ;; At the heart of this particular fuzzdelay synth are the delay lines.
 ;; My hack relies on some silence before actual buffers.
+
 syn_delay_line_space:
-syn_padding: resd	0x400000
+syn_padding:
+	resd	0x400000
 syn_rec:
-	resd	0x400000
+	resd	0x800000
 syn_dly:
-	resd	0x400000
+	resd	0x800000
 
+global _riff_data
+SEGMENT .bss
+_riff_data:
+	resd     AUDIO_DURATION_SAMPLES * AUDIO_NUMCHANNELS
 
-extern ?myMuzik@@3PAMA
-%define _myMuzik ?myMuzik@@3PAMA
 ;; The synth function that will be called from intro init.
-
 SEGMENT .text
 
 global _get_our_RIFF@0
@@ -116,7 +120,7 @@ _get_our_RIFF@0:
 	pushad
 
 	;; Copy the RIFF header to beginning of output (will leave 0 in ECX for next steps, btw..):
-	mov	edi, _myMuzik
+	mov	edi, _riff_data
 	mov	esi, _RIFF_header
 	push	11
 	pop	ecx

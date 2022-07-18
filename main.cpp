@@ -18,10 +18,10 @@
 #define XRES    (10*192 - 2 * XPOS)
 #define YRES    (10*108 - 2 * XPOS)
 
-// 0x800000 holds at maximum 174.76266666666666 seconds of audio.
-#define AUDIO_BUF_SIZE_IN_SAMPLES (0x800000)
+// Bare minimum synth interface for Win32 sndPlaySound: get_our_RIFF() will fill in a RIFF file.
 
-extern "C" { const char * __stdcall get_our_RIFF(); }
+extern "C" { void __stdcall get_our_RIFF(); }
+extern "C" { char riff_data[]; }
 
 static const PIXELFORMATDESCRIPTOR pfd = {
     0,0,PFD_SUPPORT_OPENGL|PFD_DOUBLEBUFFER,
@@ -41,8 +41,6 @@ static DEVMODE screenSettings = {
     };
 
 //--------------------------------------------------------------------------//
-
-float myMuzik[AUDIO_BUF_SIZE_IN_SAMPLES * 2 + 22];
 
 void* myglfunc[4];
 
@@ -100,7 +98,7 @@ __declspec(naked) void entrypoint( void )
 
         // Instead of IQ's example, I make the whole RIFF file over there:
         get_our_RIFF();
-        sndPlaySound((const char*)&myMuzik, SND_ASYNC | SND_MEMORY);
+        sndPlaySound((const char*)&riff_data, SND_ASYNC | SND_MEMORY);
 
         // Hmm.. There appears to be a long delay before audio.. maybe varies between installations?
         // Makes it quite difficult / impossible to synchronize audio and video truly?
