@@ -2,18 +2,17 @@
 ;; This version has almost forgotten its past life as a Linux SDL2 binary.
 ;; And yes - it is just as I thought back then: The same show could be
 ;; compressed to smaller size with the Win32 Crinkler tools. I knew it.
-;; But little did I know about further tricks that could be done on Linux..
-;; The story continues, it seems.
+;; Since then I've learned new tricks on Linux, too, so I'm not yet sure
+;; which platform comes with more overhead, Win32&OpenGL or Linux&SDL2&OpenGL.
 
 ;; I'm compiling currently like this:
-;; C:\MyTemp\nieminen\test\nasm-2.15.05-win64\nasm-2.15.05\nasm.exe -f win32 -o .\bin\vc2017\Release\synth2.obj ./src/synth2.nasm
+;; nasm -f win32 -o synth2.obj sound.nasm
 
 BITS 32
-;; Must use the decorated function name; decoration is for __stdcall
-;;global  _mzk_init@4
 
 ;; We output a complete RIFF file. Here is the header.
 ;; It conveniently defines the audio format, sample rate etc.
+;; They need to be hardcoded on the C++ -side, though.
 global  _RIFF_header
 ;; FIXME: Nice "SYNTH_CAP_NCHANNELS" etc for convenience.
 	AUDIO_DURATION_SAMPLES equ 0x800000    ; Approx 174 seconds at 48kHz
@@ -51,7 +50,7 @@ sample_rate:
 SEGMENT .rdata
 syn_c0freq:
 syn_basevol:
-   	dd	0.004138524	; 0x3b879c75; close to MIDI note 24 freq / sr * 2 * pi	
+   	dd	0.004138524	; 0x3b879c75; close to MIDI note 24 freq / 48k * 2 * pi	
 ;;; 	dd	0.016554097	; 0x3c879c75; close to MIDI note 0x30
 syn_freqr:
 ;;; 	dd	1.0594630943592953  ; freq. ratio between notes
