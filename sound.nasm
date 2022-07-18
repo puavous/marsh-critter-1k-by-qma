@@ -110,8 +110,8 @@ _riff_data:
 ;; The synth function that will be called from intro init.
 SEGMENT .text
 
-global _get_our_RIFF@0
-_get_our_RIFF@0:
+global _make_RIFF@0
+_make_RIFF@0:
 
 ;; The stack will be used very little here.. Should it? The old synth used a global
 ;; state because it was real-time. Now off-line things could be kept in stack..

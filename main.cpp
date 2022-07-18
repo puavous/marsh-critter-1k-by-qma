@@ -18,9 +18,9 @@
 #define XRES    (10*192 - 2 * XPOS)
 #define YRES    (10*108 - 2 * XPOS)
 
-// Bare minimum synth interface for Win32 sndPlaySound: get_our_RIFF() will fill in a RIFF file.
+// Bare minimum synth interface for Win32 sndPlaySound: make_RIFF() will fill in a RIFF file.
 
-extern "C" { void __stdcall get_our_RIFF(); }
+extern "C" { void __stdcall make_RIFF(); }
 extern "C" { char riff_data[]; }
 
 static const PIXELFORMATDESCRIPTOR pfd = {
@@ -97,7 +97,7 @@ __declspec(naked) void entrypoint( void )
 #endif
 
         // Instead of IQ's example, I make the whole RIFF file over there:
-        get_our_RIFF();
+        make_RIFF();
         sndPlaySound((const char*)&riff_data, SND_ASYNC | SND_MEMORY);
 
         // Hmm.. There appears to be a long delay before audio.. maybe varies between installations?
