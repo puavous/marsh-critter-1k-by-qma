@@ -86,9 +86,12 @@ Hit rtSphere(vec3 Ro, vec3 Rd, float tmin, vec4 ball){
   float b = 2 * dot(Rd, Ro);
   float c = dot(Ro,Ro) - ball.w * ball.w;
   float D = b * b - 4 * a * c;
-  if (D < .0) return Hit(vec3(0),vec3(0));
-  float tres = min( (-b + sqrt(D) ) / (2*a),
-                    (-b - sqrt(D) ) / (2*a)  );
+  // if (D < .0) return Hit(vec3(0),vec3(0));
+  // float tres = min( (-b + sqrt(D) ) / (2*a),
+  //                   (-b - sqrt(D) ) / (2*a)  );
+  float tres = (D<0)?1e9:min( (-b + sqrt(D) ) / (2*a),
+                          (-b - sqrt(D) ) / (2*a)  );
+
   return Hit(ball.xyz + Ro + tres*Rd, normalize(Ro + tres*Rd)) ;
 }
 
