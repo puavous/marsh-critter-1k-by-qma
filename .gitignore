@@ -14,6 +14,10 @@ out.html
 
 # -----------------------------------
 # Visual Studio -related
+
+# I'm interested in just a project, not solution:
+*.sln
+
 # Based on https://github.com/github/gitignore/blob/main/VisualStudio.gitignore
 # but picking only relevant stuff
 # User-specific files
