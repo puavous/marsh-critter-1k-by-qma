@@ -1,0 +1,31 @@
+# -----------------------------------
+# Some ignores..
+
+# Specific to this project:
+# glext.h and KHR/khrplatform.h should be downloaded, not pushed to the repo:
+glext.h
+KHR/
+
+# shader.h should be generated from the original in shader.frag:
+shader.h
+
+# Crinkler report:
+out.html
+
+# -----------------------------------
+# Visual Studio -related
+# Based on https://github.com/github/gitignore/blob/main/VisualStudio.gitignore
+# but picking only relevant stuff
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+
+# Visual Studio 2015/2017 cache/options directory
+.vs/
