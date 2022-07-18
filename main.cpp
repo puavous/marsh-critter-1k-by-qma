@@ -49,8 +49,11 @@ void* myglfunc[4];
 #define oglGetUniformLocation ((PFNGLGETUNIFORMLOCATIONPROC)myglfunc[2])
 #define oglUniform4i ((PFNGLUNIFORM4IPROC)myglfunc[3])
 
-// The entrypoint for Crinkler shall be naked - it's not called nor returning.
-__declspec(naked) void entrypoint( void )
+#ifndef _DEBUG
+// For a release build, the entrypoint for Crinkler shall be naked - it's not called nor returning.
+__declspec(naked) 
+#endif
+void entrypoint( void )
 {
     // Inner scope needed to enter the naked function body.
     {
@@ -102,11 +105,12 @@ __declspec(naked) void entrypoint( void )
 
         // Hmm.. There appears to be a long delay before audio.. maybe varies between installations?
         // Makes it quite difficult / impossible to synchronize audio and video truly?
-        // Sleep(300);
+        Sleep(100);
         DWORD tbeg = timeGetTime();
         do
         {
             DWORD t = timeGetTime() - tbeg;
+
             //oglUniform4f(uloc, (float)t, XRES, YRES, 1.);
             oglUniform4i(uloc, t, XRES, YRES, 1);
             glRects(-1, -1, 1, 1);
