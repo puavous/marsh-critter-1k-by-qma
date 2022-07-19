@@ -46,19 +46,8 @@ sample_rate:
 
 ;; Make data global, so crinkler can shift things around.
 ;;;  ------------------------- synth constants
+;;; (moved to per-song part, actually..)
 
-SEGMENT .rdata
-syn_c0freq:
-syn_basevol:
-   	dd	0.004138524	; 0x3b879c75; close to MIDI note 24 freq / 48k * 2 * pi	
-;;; 	dd	0.016554097	; 0x3c879c75; close to MIDI note 0x30
-syn_freqr:
-;;; 	dd	1.0594630943592953  ; freq. ratio between notes
-	dd	1.0594622	; 0x3f879c75; close to 1.0594630943592953
-syn_ticklen:
-	dd	0x1770   	; sequencer tick length. 0x1770 is 120bpm \w 4-tick note
-
-global syn_c0freq, syn_freqr, syn_ticklen
 ;; global syn_seq_duration
 
 ;; SEGMENT .data
@@ -286,14 +275,130 @@ nomore:
 %define g 7
 %define G 8
 %define a 9
+%define A 10
 %define b 11
 %define n(p,o) ((-24 + p+12*o)<<1),
 %define pause  0,
+
+
+SEGMENT .rdata
+;; Hmm... This is basically about "tuning and fine-tuning"
+;; So make it more like "per-song" data than "pre-set"
+syn_c0freq:
+syn_basevol:
+   	dd	0.004138524	; 0x3b879c75; close to MIDI note 24 freq / 48k * 2 * pi	
+;;; 	dd	0.016554097	; 0x3c879c75; close to MIDI note 0x30
+syn_freqr:
+;;; 	dd	1.0594630943592953  ; freq. ratio between notes
+	dd	1.0594622	; 0x3f879c75; close to 1.0594630943592953
+syn_ticklen:
+;;	dd	0x1770   	; sequencer tick length. 0x1770 is 120bpm \w 4-tick note
+	dd	0x1200   	; sequencer tick length.
+
+global syn_c0freq, syn_freqr, syn_ticklen
+
 
 SEGMENT .rdata
 global syn_seq_data
 
 syn_seq_data:
+
+	db	STEP_LEN(1) 	; This must be set. Others are nicely 0-inited.
+	db	DLAY_VOL(0x75)
+	db	NOTE_VOL(0x75)  
+	db      DLAY_LEN(2) 
+	db	LOOP_VOL(0xff)
+	db	LOOP_SRC(16)
+	
+	;; Intro
+ 	db	n(e,2) 	pause 	n(e,2)	pause
+ 	db	n(e,2) 	n(e,2)	pause	n(e,2)
+ 	db	n(e,3) 	pause 	n(e,2)	pause
+ 	db	n(e,2) 	n(e,2)	pause	n(e,2)
+
+	db      DLAY_LEN(6) 
+	db	DLAY_VOL(0x35)
+	
+	db	pause	pause	pause	pause
+	db	pause	pause	pause	pause
+	db	pause	pause	pause	pause
+	db	pause	pause	pause	pause
+
+	db	n(e,3)	pause	pause	pause
+	db	pause	pause	pause	pause
+	db	pause	pause	pause	pause
+	db	pause	pause	pause	pause
+
+	db	pause	pause	pause	pause
+	db	pause	pause	pause	pause
+	db	pause	pause	pause	pause
+	db	pause	pause	pause	pause
+
+	db	STEP_LEN(2)
+	db	n(e,9)		pause	
+	db	pause		pause	
+	db	pause		n(b,9)	
+	db	pause		n(d,10)	
+	db	LOOP_SRC(32)
+
+
+	db	n(e,9)		n(b,9)
+	db	pause		pause	
+	db	pause		pause	
+	db	pause		pause	
+	db	LOOP_SRC(64)
+
+	db	pause		pause	
+	db	pause		pause	
+	db	pause		pause	
+	db	pause		pause	
+
+	db	pause		pause	
+	db	pause		pause	
+	db	pause		pause	
+	db	pause		pause	
+
+	db	pause		pause	
+	db	pause		pause	
+	db	pause		pause	
+	db	pause		pause	
+
+	db	pause		pause	
+	db	pause		pause	
+	db	pause		pause	
+	db	pause		pause	
+
+	db	pause		pause	
+	db	pause		pause	
+	db	pause		pause	
+	db	pause		pause	
+
+	db	pause		pause	
+	db	pause		pause	
+	db	pause		pause	
+	db	pause		pause	
+
+	db	STEP_LEN(8)
+	db	DLAY_LEN(2)	DLAY_VOL(0xd0)
+
+	db	n(a,4)	pause	pause	pause
+	db	LOOP_SRC(64)
+	db	n(g,4)	pause	pause	pause
+	db	LOOP_SRC(96)
+	db	n(f,4)	pause	pause	pause
+	db	LOOP_SRC(128)
+	db	pause	pause	pause	pause
+	db	n(e,3)	pause	pause	pause
+	db	pause	pause	pause	pause
+
+	db	pause	pause	pause	pause
+	db	pause	pause	pause	pause
+	db	pause	pause	pause	pause
+	db	pause	pause	pause	pause
+
+
+%if 0
+;; The one from Fuzzdealer (2016).
 	;; Played one byte at a time:
 	
 	db	STEP_LEN(2) 	; This must be set. Others are nicely 0-inited.
@@ -370,3 +475,4 @@ syn_seq_data:
 	
 	;; Fade-out with a short loop at low volume
 	db	pause LOOP_SRC(4) LOOP_VOL(0x30)
+%endif
