@@ -13,36 +13,40 @@ BITS 32
 ;; We output a complete RIFF file. Here is the header.
 ;; It conveniently defines the audio format, sample rate etc.
 ;; They need to be hardcoded on the C++ -side, though.
-global  _RIFF_header
 ;; FIXME: Nice "SYNTH_CAP_NCHANNELS" etc for convenience.
 	AUDIO_DURATION_SAMPLES equ 0x800000    ; Approx 174 seconds at 48kHz
 	AUDIO_NUMCHANNELS equ 1
+	AUDIO_SAMPLERATE equ 48000
+	WAVE_FORMAT_IEEE_FLOAT equ 3 ; From the API
+	SIZEOF_IEEE_FLOAT equ 4
+
 SEGMENT	.rdata
+global  _RIFF_header
     _RIFF_header:
     ;; /* "RIFF" */
 	dd "RIFF"
     ;;  /* Chunk size (whole file sz -8) */ AUDIO_BUF_SIZE_IN_BYTES + 36,
     ;;  /* Maybe we lie.. just a bit.. sndPlaySound() doesn't care: */
-	dd AUDIO_DURATION_SAMPLES * AUDIO_NUMCHANNELS * 4
+	dd AUDIO_DURATION_SAMPLES * AUDIO_NUMCHANNELS * SIZEOF_IEEE_FLOAT
     ;;  /* "WAVE" .. means there will be "fmt " and "data" after. */
 	dd "WAVE"
     ;; /* Format subchunk: */
     ;; /* "fmt " and size of it*/ 
 	dd "fmt ", 16
     ;; /* Audio format, WAVE_FORMAT_IEEE_FLOAT==3 and #channels */ 
-	dw 3, AUDIO_NUMCHANNELS
+	dw WAVE_FORMAT_IEEE_FLOAT, AUDIO_NUMCHANNELS
     ;; /* Sample rate */ MZK_RATE,
 sample_rate:
-	dd 48000
-    ;;/* Byte rate */ MZK_RATE* AUDIO_NUMCHANNELS * sizeof(float),
-	dd 48000 * AUDIO_NUMCHANNELS * 4
+	dd AUDIO_SAMPLERATE
+    ;;/* Byte rate */
+	dd AUDIO_SAMPLERATE * AUDIO_NUMCHANNELS * SIZEOF_IEEE_FLOAT
     ;; /* Bytes-per-block */ (AUDIO_NUMCHANNELS * sizeof(float)) | /* bits-per-sample */ ((8 * sizeof(float)) << 16),
-	dw AUDIO_NUMCHANNELS * 4, 32
+	dw AUDIO_NUMCHANNELS * SIZEOF_IEEE_FLOAT, 8 * SIZEOF_IEEE_FLOAT
     ;; /* Data subchunk: */
     ;; /* "data" */ 0x61746164,
 	dd "data"
     ;;/* Subchunk size */
-	dd AUDIO_DURATION_SAMPLES * AUDIO_NUMCHANNELS * 4
+	dd AUDIO_DURATION_SAMPLES * AUDIO_NUMCHANNELS * SIZEOF_IEEE_FLOAT
 
 ;; Make data global, so crinkler can shift things around.
 ;;;  ------------------------- synth constants
@@ -59,8 +63,7 @@ DURATION equ 0x500000
 SEGMENT .bss
 global syn_currentf, syn_pipeline
 ;;; State of my monophonic fuzzdelay synth contains frequency and other variables.
-syn_currentf:
-	resd	1
+syn_currentf:	resd	1
 ;;; Synth pipeline variables - used one by one, in order.
 ;;; Some of these are "patch parameters" that are supposed to be set by the note stream.
 ;;; Some pipeline variables are only for internal use.
