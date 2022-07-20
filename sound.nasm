@@ -122,27 +122,26 @@ _make_RIFF@0:
 
 ;; Dedicated registers:
 ;;   ESI == pointer to next sequencer event
-;;   EDI == During each loop iteration: pointer to next pipeline variable
+;;   EDI == Beginning of output buffer
 ;;   EAX == The temp of temps
 ;;   EBX == (not yet in dedicated use here - could optimize something with it)
 ;;   ECX == output frame counter (i.e., blocks of samples)
 ;;   EDX == Preferred temporary data register together with EAX
-;;   EBP == Beginning of output buffer
+;;   EBP == Base pointer to the synth state variable package.
 ;;   ESP == Stack top would be usable for intermediates/calls
 
  	mov	esi, dword syn_seq_data
-	mov	ebp, edi	; EBP is now the base of output operations
+	mov	ebp, syn_BASE
 
 ;; Maybe this is a space-saver, even with crinkler.. 
 %define ADDR(r,base,a)   r + ((a) - base)
-%define SPAR(par) ADDR(edi, syn_BASE, par)
+%define SPAR(par) ADDR(ebp, syn_BASE, par)
 
 aud_buf_loop:
-	mov	edi, syn_pipeline	; EDI ---> syn_env_state
 	;; ---------------------------------------------------------------------
 	;; Only reconfigure state when step length has been reached:
-	mov	eax, dword [ADDR(edi, syn_BASE, syn_steplen)]
-	sub	eax, dword [ADDR(edi, syn_BASE, syn_env_state)]
+	mov	eax, dword [SPAR(syn_steplen)]
+	sub	eax, dword [SPAR(syn_env_state)]
 	;; Observe situation after this:
 	;; If ZF (due to subtraction) then:
 	;;   - step is at end (state==len), so we read data;
@@ -253,7 +252,7 @@ distortion:
 
 outputs:
 	;;  Finally store. Fp stack is now: (dly mix final)
-	fstp	dword [ebp + 4*ecx]		; -> buffer (dly mix)
+	fstp	dword [edi + 4*ecx]		; -> buffer (dly mix)
 	fstp	dword [syn_rec + 4*ecx] 	; -> mix (dly)
 	fstp	dword [syn_dly + 4*ecx] 	; -> delay ()
 
