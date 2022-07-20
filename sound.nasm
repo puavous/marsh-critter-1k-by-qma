@@ -127,6 +127,7 @@ _make_RIFF@0:
 ;;   ECX == output frame counter (i.e., blocks of samples)
 ;;   EDX == Preferred temporary data register together with EAX
 ;;   EBP == Beginning of output buffer
+;;   ESP == Stack top would be usable for intermediates/calls
 
  	mov	esi, dword syn_seq_data
 	mov	ebp, edi	; EBP is now the base of output operations
@@ -137,9 +138,10 @@ aud_buf_loop:
 	;; Only reconfigure state when step length has been reached:
 	mov	eax, dword [syn_steplen]
 	scasd	; EDI ---> syn_tiks
-	;; Observe situation after this subtraction:
+	;; Observe situation after this:
 	;; If ZF (due to scasd) then:
-	;;   - step is at end, so we read data; EAX==0.
+	;;   - step is at end, so we read data;
+	;;   - this occurs on first entry because steplen==state==0
 	;; Else:
 	;;   - we jump to render sound. EDI points to syn_tiks
 	jne	do_sample
@@ -156,7 +158,7 @@ read_from_sequence:
 	;; Shift last bit out to see if we have a 7-bit note or a control byte:
  	shr	al, 1
 	mov	edx, eax	; EAX was 0, so now DL==EDX==EAX==AL. mov changes no flag.
-	jnc	new_note	; Break loop when a note event arrives after N parameter sets.
+	jnc	new_note	; Break loop when a note event arrives after 0-N parameter sets.
 
 	lodsb
 	;; Store parameter
@@ -186,20 +188,25 @@ do_sample:
  	scasd	; EDI ---> syn_steplen
  	mov	dword [edi], eax	; store step length
 
-	;; Compute falling envelope as 1 - env_state/env_length.
+envelope:
+	;; Compute falling envelope as 1 - env_state/steplen
 	fld1				; (1)
- 	fild	dword [syn_env_state]	; (1 ienv)
+	fld1
+	fimul	dword [syn_env_state]
+;; 	fild	dword [syn_env_state]	; (1 ienv)
 	fidiv	dword [edi]		; (1 rise)
 	fsubp   			; (fall)
 	
 	;; Intend to play sin(2pi*frequency*framecount/srate)
-
+phasemod:
  	fld	dword [syn_currentf]	; (fall note)
    	fimul	dword [syn_env_state]	; (fall note*iphase)
   	fld	st0			; (fall note*iphase note*iphase)
  	fadd	st0			; (fall note*iphase 2*note*iphase)
-  	fadd	st0			; (fall note*iphase 4*note*iphase)
+	fadd	st0			; (fall note*iphase 4*note*iphase)
 	fsin				; (fall note*iphase sin(4*note*iphase))
+	fmul	st2			; (fall note*iphase fall*phaseplus)
+	fmul	st2			; (fall note*iphase fall*phaseplus)
 	faddp	   			; (fall note*iphase+sin(4*note*iphase))
 	fsin				; (fall sin(note*iphase+sin(4*note*iphase)))
 	fmulp   			; (fall*sin(note*iphase+sin(4*note*iphase)))
@@ -210,6 +217,7 @@ do_sample:
 	fimul	dword [edi]
 	fmul	dword [syn_basevol]
 
+delays:
 	;; ---- Delay thingy.
 	;; collect shorter delay:
 	;; Compute short delay length:
@@ -239,10 +247,10 @@ do_sample:
 	fmul	dword [syn_basevol] ;(dly dly lvol*looped)
 	faddp			;(dly dly+lvol*looped)
 	fld	st0		;(dly mix mix)
-nomore:	
 	
 	;; ---- Delay thingy ends.
 
+distortion:
 ;;; Make a smooth distortion for output (some +8 bytes compressed..)
 	fld	st0		; (x x)
 	fabs			; (x |x|)
@@ -250,14 +258,19 @@ nomore:
 	faddp			; (x 1+|x|)
 	fdivp			; (x/(1+|x|))
 
+outputs:
 	;;  Finally store. Fp stack is now: (dly mix final)
 	fstp	dword [ebp + 4*ecx]		; -> buffer (dly mix)
 	fstp	dword [syn_rec + 4*ecx] 	; -> mix (dly)
 	fstp	dword [syn_dly + 4*ecx] 	; -> delay ()
-	
-	inc	ecx
+
+book_keeping:
+
+;;	mov	edi, syn_pipeline
+;;	inc	dword [edi]
 	inc	dword [syn_env_state]
 	
+	inc	ecx
 	;;cmp     dword [syn_seq_duration], ecx ; length in bytes
 	cmp	ecx, DURATION
 	
