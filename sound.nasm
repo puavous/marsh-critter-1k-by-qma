@@ -124,7 +124,7 @@ _make_RIFF@0:
 ;;   ESI == pointer to next sequencer event
 ;;   EDI == Beginning of output buffer
 ;;   EAX == The temp of temps
-;;   EBX == (not yet in dedicated use here - could optimize something with it)
+;;   EBX == Base pointer to synth / song constants
 ;;   ECX == output frame counter (i.e., blocks of samples)
 ;;   EDX == Preferred temporary data register together with EAX
 ;;   EBP == Base pointer to the synth state variable package.
@@ -132,10 +132,12 @@ _make_RIFF@0:
 
  	mov	esi, dword syn_seq_data
 	mov	ebp, syn_BASE
+	mov	ebx, synconst_BASE
 
 ;; Maybe this is a space-saver, even with crinkler.. 
 %define ADDR(r,base,a)   r + ((a) - base)
 %define SPAR(par) ADDR(ebp, syn_BASE, par)
+%define SCONST(cnst) ADDR(ebx, synconst_BASE, cnst)
 
 aud_buf_loop:
 	;; ---------------------------------------------------------------------
@@ -175,9 +177,9 @@ new_note:
 	;; NOTE: Zero flag must be set if DL==0 !
 	fldz
 	jz	store_frequency
-	fadd	dword [syn_c0freq]
+	fadd	dword [SCONST(synconst_c0freq)]
 pow_to_frequency:
-	fmul	dword [syn_freqr]
+	fmul	dword [SCONST(synconst_freqr)]
 	dec	dl
 	jnz	pow_to_frequency
 store_frequency:
@@ -186,7 +188,7 @@ store_frequency:
 do_sample:
 	;; Re-compute based on params (may have just changed)
 	mov	eax, [SPAR(syn_tiks)]	; was EDI ---> syn_tiks
-	mul	dword [syn_ticklen]	; global tick length
+	mul	dword [SCONST(synconst_ticklen)]	; global tick length
  	mov	dword [SPAR(syn_steplen)], eax	; store step length
 
 envelope:
@@ -211,32 +213,32 @@ phasemod:
 
 	;; Overall volume:
 	fimul	dword [SPAR(syn_nvol)]
-	fmul	dword [syn_basevol]	; FIXME: Constants same trick with base!?
+	fmul	dword [SCONST(synconst_basevol)]	; FIXME: Constants same trick with base!?
 
 delays:
 	;; ---- Delay thingy.
 	;; collect shorter delay:
 	;; Compute short delay length:
 	mov	eax, [SPAR(syn_dlen)]
-	mul	dword [syn_ticklen]
+	mul	dword [SCONST(synconst_ticklen)]
 	mov	edx, ecx
 	sub	edx, eax
 	
 	fld	dword [syn_dly + 4*edx] ;(audio delayed)
 	fimul	dword [SPAR(syn_dvol)]
-	fmul	dword [syn_basevol]
+	fmul	dword [SCONST(synconst_basevol)]
 	faddp				;(audio+dvol*delayed)
 	fld	st0			;(audio+dvol*delayed audio+dvol*delayed)
 	
 	;; collect longer delay from history, with loop volume:
 	mov	eax, [SPAR(syn_lsrc)]
-	mul	dword [syn_ticklen]
+	mul	dword [SCONST(synconst_ticklen)]
 	mov	edx, ecx
 	sub	edx, eax
 	
 	fld	dword [syn_rec + 4 * edx] ;(dly dly looped)
 	fimul	dword [SPAR(syn_lvol)]
-	fmul	dword [syn_basevol] ;(dly dly lvol*looped)
+	fmul	dword [SCONST(synconst_basevol)] ;(dly dly lvol*looped)
 	faddp			;(dly dly+lvol*looped)
 	fld	st0		;(dly mix mix)
 	
@@ -299,19 +301,19 @@ book_keeping:
 SEGMENT .rdata
 ;; Hmm... This is basically about "tuning and fine-tuning"
 ;; So make it more like "per-song" data than "pre-set"
-syn_c0freq:
-syn_basevol:
+synconst_BASE:
+synconst_c0freq:
+synconst_basevol:
    	dd	0.004138524	; 0x3b879c75; close to MIDI note 24 freq / 48k * 2 * pi	
 ;;; 	dd	0.016554097	; 0x3c879c75; close to MIDI note 0x30
-syn_freqr:
+synconst_freqr:
 ;;; 	dd	1.0594630943592953  ; freq. ratio between notes
 	dd	1.0594622	; 0x3f879c75; close to 1.0594630943592953
-syn_ticklen:
+synconst_ticklen:
 ;;	dd	0x1770   	; sequencer tick length. 0x1770 is 120bpm \w 4-tick note
 	dd	0x1200   	; sequencer tick length.
 
-global syn_c0freq, syn_freqr, syn_ticklen
-
+global synconst_BASE
 
 SEGMENT .rdata
 global syn_seq_data
