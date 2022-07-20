@@ -189,13 +189,9 @@ do_sample:
  	mov	dword [edi], eax	; store step length
 
 envelope:
-	;; Compute falling envelope as 1 - env_state/steplen
-	fld1				; (1)
-	fld1
-	fimul	dword [syn_env_state]
-;; 	fild	dword [syn_env_state]	; (1 ienv)
-	fidiv	dword [edi]		; (1 rise)
-	fsubp   			; (fall)
+	fild	dword [edi]		; ( steplen )
+	fisub	dword [syn_env_state]	; ( steplen-state )
+	fidiv	dword [edi]		; ( [len-state]/len =: fall )
 	
 	;; Intend to play sin(2pi*frequency*framecount/srate)
 phasemod:
