@@ -190,7 +190,8 @@ do_sample:
 
 envelope:
 	fild	dword [edi]		; ( steplen )
-	fisub	dword [syn_env_state]	; ( steplen-state )
+	fisub	dword [edi-8]		; Hardcoded.. but the whole pipeline is...?
+;;	fisub	dword [syn_env_state]	; ( steplen-state )
 	fidiv	dword [edi]		; ( [len-state]/len =: fall )
 	
 	;; Intend to play sin(2pi*frequency*framecount/srate)
