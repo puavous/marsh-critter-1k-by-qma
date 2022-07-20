@@ -143,20 +143,19 @@ aud_buf_loop:
 	;; Only reconfigure state when step length has been reached:
 	mov	eax, dword [ADDR(edi, syn_BASE, syn_steplen)]
 	sub	eax, dword [ADDR(edi, syn_BASE, syn_env_state)]
-;; Old comment was:
-;;	scasd	; EDI ---> syn_tiks
 	;; Observe situation after this:
-	;; If ZF (due to scasd) then:
-	;;   - step is at end, so we read data;
+	;; If ZF (due to subtraction) then:
+	;;   - step is at end (state==len), so we read data;
 	;;   - this occurs on first entry because steplen==state==0
+	;;   - incidentally, or less incidentally, EAX==0
 	;; Else:
-	;;   - we jump to render sound. EDI points to syn_tiks
+	;;   - we jump to render sound.
 	jne	do_sample
 	
 	;; ---------------------------------------------------------------------
 	;; Read bytes and reconfigure state.
 	;; First, reset envelope state:
-	xor	eax, eax
+	;; xor	eax, eax
 	mov	dword [SPAR(syn_env_state)], eax
 
 read_from_sequence:
@@ -186,9 +185,6 @@ store_frequency:
  	fstp	dword[SPAR(syn_currentf)]
 
 do_sample:
-;;	mov	edi, syn_pipeline
-;;	scasd  ; EDI--->syn_tiks 
-;;	mov	edi, syn_tiks
 	;; Re-compute based on params (may have just changed)
 	mov	eax, [SPAR(syn_tiks)]	; was EDI ---> syn_tiks
 	mul	dword [syn_ticklen]	; global tick length
@@ -197,7 +193,6 @@ do_sample:
 envelope:
 	fild	dword [SPAR(syn_steplen)]	; ( steplen )
 	fisub	dword [SPAR(syn_env_state)]	; ( steplen - state)
-;;	fisub	dword [syn_env_state]	; ( steplen-state )
 	fidiv	dword [SPAR(syn_steplen)]	; ( [len-state]/len =: fall )
 
 	;; Intend to play sin(2pi*frequency*framecount/srate)
@@ -264,8 +259,6 @@ outputs:
 
 book_keeping:
 
-;;	mov	edi, syn_pipeline
-;;	inc	dword [edi]
 	inc	dword [SPAR(syn_env_state)]
 	
 	inc	ecx
