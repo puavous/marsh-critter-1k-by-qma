@@ -70,16 +70,19 @@ vec2 i_screenCoord(vec2 pix, vec2 resolution){
     return (2*pix - resolution) / resolution.yy;
 }
 
+/* Structure for ray-tracing state.. */
+// struct Hit{
+//   float d; // Distance of hit along ray direction.
+//   vec3 P; // World position of hit
+//   vec3 n; // Normal vector of hit
+// };
+
+
 /* Ray-trace to a sphere.
  *
  * Algorithm:
  *   ..
  */
-struct Hit{
-  float d; // Distance of hit along ray direction.
-  vec3 P; // World position of hit
-  vec3 n; // Normal vector of hit
-};
 
 // void rtSphere(inout Hit hit, vec3 Ro, vec3 Rd, float tmin, vec4 ball){
 //   Ro -= ball.xyz;
@@ -113,15 +116,24 @@ struct Hit{
 /** Intersect ray with plane; give barycentric coordinates to triangle abc.
 * Algorithm.. course notes http://users.jyu.fi/~nieminen/tgp21/tiea311_2019_lec17.pdf
 */
-vec2 rtPlane3(inout Hit hit, vec3 Ro, vec3 Rd, vec3 a, vec3 b, vec3 c){
-  mat3 A=mat3(a-b, a-c, Rd);
-  mat3 Ainv=inverse(A);
-  vec3 x=Ainv*(a-Ro);
-  float t=x.z;
-  if ((0<t) && (t<hit.d)){
-     hit = Hit(t, Ro + t*Rd, cross(b-a,c-a));
-  }
-  return x.xy;
+// vec2 rtPlane3(inout Hit hit, vec3 Ro, vec3 Rd, vec3 a, vec3 b, vec3 c){
+//   mat3 A=mat3(a-b, a-c, Rd);
+//   mat3 Ainv=inverse(A);
+//   vec3 x=Ainv*(a-Ro);
+//   float t=x.z;
+//   if ((0<t) && (t<hit.d)){
+//      hit = Hit(t, Ro + t*Rd, cross(b-a,c-a));
+//   }
+//   return x.xy;
+// }
+// /** Super minimalistic triangle intersect, returns (alpha,beta,t)*/
+// vec3 rtMiniPlane(vec3 Ro, vec3 Rd, vec3 a, vec3 b, vec3 c){
+//   return inverse(mat3(a-b,a-c,Rd))*(a-Ro);
+// }
+
+/** Here, give triangle abc as a=a, u=b-a, v=c-a. */
+vec3 i_rtMiniPlane2(vec3 Ro, vec3 Rd, vec3 a, vec3 u, vec3 v){
+  return inverse(mat3(-u,-v,Rd))*(a-Ro);
 }
 
 void main()
@@ -137,7 +149,7 @@ void main()
     //vec4 sph1 = vec4(sin(iTime),cos(iTime),0,1);
     vec3 eye = vec3(0,0,30);
     vec3 rd = normalize(vec3(s.xy, -4));
-    Hit h = Hit(1e9,vec3(0),vec3(1));
+    // Hit h = Hit(1e9,vec3(0),vec3(1));
 
     // vec4 sph1 = vec4(3*sin(iTime),3*cos(iTime),10*sin(iTime*3),1);
     // rtSphere(h, eye, rd, 0., sph1);
@@ -146,16 +158,38 @@ void main()
 //    vec3 plane2n = vec3(0,1,0);
 //    rtPlane(h, eye, rd, plane1p, plane2n);
 
-    vec2 uv=rtPlane3(h, eye, rd,
-      vec3(0,-2,0),
-      vec3(1,-2,0),
-      vec3(0,-2,1));
+    // vec2 uv=rtPlane3(h, eye, rd,
+    //   vec3(0,-2,0),
+    //   vec3(1,-2,0),
+    //   vec3(0,-2,1));
 
-    if (h.d<1e9){
-      col = vec3(sin(length(uv)+iTime));
-    } else {
-      col = vec3(0,0,dot(rd,vec3(1,1,-1)));
+    // if (h.d<1e9){
+    //   col = vec3(sin(length(uv)+iTime));
+    // } else {
+    //   col = vec3(0,0,dot(rd,vec3(1,1,-1)));
+    // }
+    // vec3 uvt=rtMiniPlane(eye, rd,
+    //    vec3(0,-2,0),
+    //    vec3(1,-2,0),
+    //    vec3(0,-2,1));
+    // if (uvt.z>0){
+    //      col = vec3(sin(length(uvt.xy)-iTime));
+    //    } else {
+    //      col = vec3(0.3,0,dot(rd,vec3(1,1,-1)));
+    // }
+
+    vec3 uvt=i_rtMiniPlane2(eye, rd,
+       vec3(0,-2,0),
+       vec3(1,0,0),
+       vec3(0,0,1));
+    if (uvt.z>0){
+         col = vec3(sin(length(uvt.xy)-iTime));
+       } else {
+         float i_intens = max(0.1,dot(rd,vec3(.3,3-iTime/7,-1)));
+         col = i_intens * vec3(0.3,0.1,i_intens);
     }
+
+
 //    col = sin(h.P);
 //    vec3 point = eye+t*rd;    
 //    col = point;
