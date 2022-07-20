@@ -232,6 +232,8 @@ delays:
 	fld	st0			;(audio+dvol*delayed audio+dvol*delayed)
 	
 	;; collect longer delay from history, with loop volume:
+	;; ehm.. doesn't have to be longer, really.. interesting, unplanned facet..
+	;; Playing with two quite similar delay lines here.
 	mov	eax, [SPAR(syn_lsrc)]
 	mul	dword [SCONST(synconst_ticklen)]
 	mov	edx, ecx
@@ -247,6 +249,7 @@ delays:
 
 distortion:
 ;;; Make a smooth distortion for output (some +8 bytes compressed..)
+;;; Distortion affects final output, not delay lines. Hmm... could re-design a bit?
 	fld	st0		; (x x)
 	fabs			; (x |x|)
 	fld1			; (x |x| 1)
