@@ -68,6 +68,7 @@ syn_currentf:	resd	1
 ;;; Some of these are "patch parameters" that are supposed to be set by the note stream.
 ;;; Some pipeline variables are only for internal use.
 syn_pipeline:
+syn_BASE:
 syn_env_state:	resd	1
 ;;; Integer parameters start from here:
 syn_params:
@@ -132,12 +133,18 @@ _make_RIFF@0:
  	mov	esi, dword syn_seq_data
 	mov	ebp, edi	; EBP is now the base of output operations
 
+;; Maybe this is a space-saver, even with crinkler.. 
+%define ADDR(r,base,a)   r + ((a) - base)
+%define SPAR(par) ADDR(edi, syn_BASE, par)
+
 aud_buf_loop:
 	mov	edi, syn_pipeline	; EDI ---> syn_env_state
 	;; ---------------------------------------------------------------------
 	;; Only reconfigure state when step length has been reached:
-	mov	eax, dword [syn_steplen]
-	scasd	; EDI ---> syn_tiks
+	mov	eax, dword [ADDR(edi, syn_BASE, syn_steplen)]
+	sub	eax, dword [ADDR(edi, syn_BASE, syn_env_state)]
+;; Old comment was:
+;;	scasd	; EDI ---> syn_tiks
 	;; Observe situation after this:
 	;; If ZF (due to scasd) then:
 	;;   - step is at end, so we read data;
@@ -150,7 +157,7 @@ aud_buf_loop:
 	;; Read bytes and reconfigure state.
 	;; First, reset envelope state:
 	xor	eax, eax
-	mov	dword [syn_env_state], eax
+	mov	dword [SPAR(syn_env_state)], eax
 
 read_from_sequence:
 	;; Read next byte from sequence to DL, and update counter:
@@ -162,7 +169,7 @@ read_from_sequence:
 
 	lodsb
 	;; Store parameter
-	mov	[syn_params + 4*edx],eax
+	mov	[SPAR(syn_params) + 4*edx],eax
 	jmp	read_from_sequence
 	
 new_note:
@@ -176,28 +183,27 @@ pow_to_frequency:
 	dec	dl
 	jnz	pow_to_frequency
 store_frequency:
- 	fstp	dword[syn_currentf]
-	
+ 	fstp	dword[SPAR(syn_currentf)]
+
 do_sample:
 ;;	mov	edi, syn_pipeline
 ;;	scasd  ; EDI--->syn_tiks 
 ;;	mov	edi, syn_tiks
 	;; Re-compute based on params (may have just changed)
-	mov	eax, [edi]		; was EDI ---> syn_tiks
+	mov	eax, [SPAR(syn_tiks)]	; was EDI ---> syn_tiks
 	mul	dword [syn_ticklen]	; global tick length
- 	scasd	; EDI ---> syn_steplen
- 	mov	dword [edi], eax	; store step length
+ 	mov	dword [SPAR(syn_steplen)], eax	; store step length
 
 envelope:
-	fild	dword [edi]		; ( steplen )
-	fisub	dword [edi-8]		; Hardcoded.. but the whole pipeline is...?
+	fild	dword [SPAR(syn_steplen)]	; ( steplen )
+	fisub	dword [SPAR(syn_env_state)]	; ( steplen - state)
 ;;	fisub	dword [syn_env_state]	; ( steplen-state )
-	fidiv	dword [edi]		; ( [len-state]/len =: fall )
-	
+	fidiv	dword [SPAR(syn_steplen)]	; ( [len-state]/len =: fall )
+
 	;; Intend to play sin(2pi*frequency*framecount/srate)
 phasemod:
- 	fld	dword [syn_currentf]	; (fall note)
-   	fimul	dword [syn_env_state]	; (fall note*iphase)
+ 	fld	dword [SPAR(syn_currentf)]	; (fall note)
+   	fimul	dword [SPAR(syn_env_state)]	; (fall note*iphase)
   	fld	st0			; (fall note*iphase note*iphase)
  	fadd	st0			; (fall note*iphase 2*note*iphase)
 	fadd	st0			; (fall note*iphase 4*note*iphase)
@@ -210,37 +216,32 @@ phasemod:
 					; == (audio)
 
 	;; Overall volume:
-	scasd	; EDI ---> syn_nvol
-	fimul	dword [edi]
-	fmul	dword [syn_basevol]
+	fimul	dword [SPAR(syn_nvol)]
+	fmul	dword [syn_basevol]	; FIXME: Constants same trick with base!?
 
 delays:
 	;; ---- Delay thingy.
 	;; collect shorter delay:
 	;; Compute short delay length:
-	scasd	; EDI ---> syn_dlen
-	mov	eax, [edi]
+	mov	eax, [SPAR(syn_dlen)]
 	mul	dword [syn_ticklen]
 	mov	edx, ecx
 	sub	edx, eax
 	
 	fld	dword [syn_dly + 4*edx] ;(audio delayed)
-	scasd	; EDI ---> syn_dvol
-	fimul	dword [edi]
+	fimul	dword [SPAR(syn_dvol)]
 	fmul	dword [syn_basevol]
 	faddp				;(audio+dvol*delayed)
 	fld	st0			;(audio+dvol*delayed audio+dvol*delayed)
 	
 	;; collect longer delay from history, with loop volume:
-	scasd	; EDI ---> syn_lsrc
-	mov	eax, [edi]
+	mov	eax, [SPAR(syn_lsrc)]
 	mul	dword [syn_ticklen]
 	mov	edx, ecx
 	sub	edx, eax
 	
 	fld	dword [syn_rec + 4 * edx] ;(dly dly looped)
-	scasd	; EDI ---> syn_lvol
-	fimul	dword [edi]
+	fimul	dword [SPAR(syn_lvol)]
 	fmul	dword [syn_basevol] ;(dly dly lvol*looped)
 	faddp			;(dly dly+lvol*looped)
 	fld	st0		;(dly mix mix)
@@ -265,7 +266,7 @@ book_keeping:
 
 ;;	mov	edi, syn_pipeline
 ;;	inc	dword [edi]
-	inc	dword [syn_env_state]
+	inc	dword [SPAR(syn_env_state)]
 	
 	inc	ecx
 	;;cmp     dword [syn_seq_duration], ecx ; length in bytes
