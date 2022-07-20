@@ -1,4 +1,4 @@
-#version 120
+#version 140
 uniform ivec4 u;
 
 // Placeholder as of now.. old codes dug up from various hobby events..
@@ -76,23 +76,52 @@ vec2 i_screenCoord(vec2 pix, vec2 resolution){
  *   ..
  */
 struct Hit{
-   vec3 P; // World position of hit
-   vec3 n; // Normal vector of hit
+  float d; // Distance of hit along ray direction.
+  vec3 P; // World position of hit
+  vec3 n; // Normal vector of hit
 };
 
-Hit rtSphere(vec3 Ro, vec3 Rd, float tmin, vec4 ball){
-  Ro -= ball.xyz;
-  float a = dot(Rd,Rd);
-  float b = 2 * dot(Rd, Ro);
-  float c = dot(Ro,Ro) - ball.w * ball.w;
-  float D = b * b - 4 * a * c;
-  // if (D < .0) return Hit(vec3(0),vec3(0));
-  // float tres = min( (-b + sqrt(D) ) / (2*a),
-  //                   (-b - sqrt(D) ) / (2*a)  );
-  float tres = (D<0)?1e9:min( (-b + sqrt(D) ) / (2*a),
-                          (-b - sqrt(D) ) / (2*a)  );
+// void rtSphere(inout Hit hit, vec3 Ro, vec3 Rd, float tmin, vec4 ball){
+//   Ro -= ball.xyz;
+//   float a = dot(Rd,Rd);
+//   float b = 2 * dot(Rd, Ro);
+//   float c = dot(Ro,Ro) - ball.w * ball.w;
+//   float D = b * b - 4 * a * c;
+//   // if (D < .0) return Hit(vec3(0),vec3(0));
+//   // float tres = min( (-b + sqrt(D) ) / (2*a),
+//   //                   (-b - sqrt(D) ) / (2*a)  );
+//   if (D >= 0) {
+//     float tres = min( (-b + sqrt(D) ) / (2*a),
+//                      (-b - sqrt(D) ) / (2*a)  );
+//     if ((tmin < tres) && (tres < hit.d )){
+//       hit = Hit(tres, ball.xyz + Ro + tres*Rd, normalize(Ro + tres*Rd));
+//     }
+//   }
+//   //float tres = (D<0)?1e9:min( (-b + sqrt(D) ) / (2*a),
+//   //                        (-b - sqrt(D) ) / (2*a)  );
+//   //return Hit(ball.xyz + Ro + tres*Rd, normalize(Ro + tres*Rd)) ;
+// }
 
-  return Hit(ball.xyz + Ro + tres*Rd, normalize(Ro + tres*Rd)) ;
+// void rtPlane(inout Hit hit, vec3 Ro, vec3 Rd, vec3 plane_p, vec3 plane_n){
+//   float D = dot(Rd, plane_n);
+//   if (D>0.){
+//     float tres = dot(plane_p - Ro, plane_n) / D;
+//     hit = Hit(tres, Ro + tres*Rd, plane_n);
+//   }
+// }
+
+/** Intersect ray with plane; give barycentric coordinates to triangle abc.
+* Algorithm.. course notes http://users.jyu.fi/~nieminen/tgp21/tiea311_2019_lec17.pdf
+*/
+vec2 rtPlane3(inout Hit hit, vec3 Ro, vec3 Rd, vec3 a, vec3 b, vec3 c){
+  mat3 A=mat3(a-b, a-c, Rd);
+  mat3 Ainv=inverse(A);
+  vec3 x=Ainv*(a-Ro);
+  float t=x.z;
+  if ((0<t) && (t<hit.d)){
+     hit = Hit(t, Ro + t*Rd, cross(b-a,c-a));
+  }
+  return x.xy;
 }
 
 void main()
@@ -106,11 +135,28 @@ void main()
     //fragColor = vec4(i_testTexture(s),1); return;
 
     //vec4 sph1 = vec4(sin(iTime),cos(iTime),0,1);
-    vec4 sph1 = vec4(3*sin(iTime),3*cos(iTime),10*sin(iTime*3),1);
     vec3 eye = vec3(0,0,30);
     vec3 rd = normalize(vec3(s.xy, -4));
-    Hit h = rtSphere(eye, rd, 0., sph1);
-    col = sin(h.n*16);
+    Hit h = Hit(1e9,vec3(0),vec3(1));
+
+    // vec4 sph1 = vec4(3*sin(iTime),3*cos(iTime),10*sin(iTime*3),1);
+    // rtSphere(h, eye, rd, 0., sph1);
+
+//    vec3 plane1p = vec3(0,-2-sin(iTime),0);
+//    vec3 plane2n = vec3(0,1,0);
+//    rtPlane(h, eye, rd, plane1p, plane2n);
+
+    vec2 uv=rtPlane3(h, eye, rd,
+      vec3(0,-2,0),
+      vec3(1,-2,0),
+      vec3(0,-2,1));
+
+    if (h.d<1e9){
+      col = vec3(sin(length(uv)+iTime));
+    } else {
+      col = vec3(0,0,dot(rd,vec3(1,1,-1)));
+    }
+//    col = sin(h.P);
 //    vec3 point = eye+t*rd;    
 //    col = point;
     
