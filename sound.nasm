@@ -130,9 +130,10 @@ _make_RIFF@0:
 ;;   EBP == Base pointer to the synth state variable package.
 ;;   ESP == Stack top would be usable for intermediates/calls
 
- 	mov	esi, dword syn_seq_data
 	mov	ebp, syn_BASE
 	mov	ebx, synconst_BASE
+;; 	mov	esi, syn_seq_data
+	mov	esi, ebx
 
 ;; Maybe this is a space-saver, even with crinkler.. 
 %define ADDR(r,base,a)   r + ((a) - base)
@@ -299,9 +300,10 @@ book_keeping:
 
 
 SEGMENT .rdata
+global synconst_START
 ;; Hmm... This is basically about "tuning and fine-tuning"
 ;; So make it more like "per-song" data than "pre-set"
-synconst_BASE:
+synconst_START:
 synconst_c0freq:
 synconst_basevol:
    	dd	0.004138524	; 0x3b879c75; close to MIDI note 24 freq / 48k * 2 * pi	
@@ -312,11 +314,7 @@ synconst_freqr:
 synconst_ticklen:
 ;;	dd	0x1770   	; sequencer tick length. 0x1770 is 120bpm \w 4-tick note
 	dd	0x1200   	; sequencer tick length.
-
-global synconst_BASE
-
-SEGMENT .rdata
-global syn_seq_data
+synconst_BASE:
 
 syn_seq_data:
 
