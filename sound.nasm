@@ -132,11 +132,16 @@ _make_RIFF@0:
 	mov	ebp, edi	; EBP is now the base of output operations
 
 aud_buf_loop:
-	mov	edi, syn_pipeline
+	mov	edi, syn_pipeline	; EDI ---> syn_env_state
 	;; ---------------------------------------------------------------------
 	;; Only reconfigure state when step length has been reached:
 	mov	eax, dword [syn_steplen]
-	scasd  ; EDI--->syn_tiks  ZF if env_state==steplen
+	scasd	; EDI ---> syn_tiks
+	;; Observe situation after this subtraction:
+	;; If ZF (due to scasd) then:
+	;;   - step is at end, so we read data; EAX==0.
+	;; Else:
+	;;   - we jump to render sound. EDI points to syn_tiks
 	jne	do_sample
 	
 	;; ---------------------------------------------------------------------
@@ -172,20 +177,24 @@ store_frequency:
  	fstp	dword[syn_currentf]
 	
 do_sample:
+;;	mov	edi, syn_pipeline
+;;	scasd  ; EDI--->syn_tiks 
+;;	mov	edi, syn_tiks
 	;; Re-compute based on params (may have just changed)
-	mov	eax, [edi]
-	mul	dword [syn_ticklen]
+	mov	eax, [edi]		; was EDI ---> syn_tiks
+	mul	dword [syn_ticklen]	; global tick length
  	scasd	; EDI ---> syn_steplen
- 	mov	dword [edi], eax
+ 	mov	dword [edi], eax	; store step length
 
-	fld1							; (1)
- 	fild	dword [syn_env_state] ; (1 ienv)
-	fidiv	dword [edi]					; (1 rise)
-	fsubp   						; (fall)
+	;; Compute falling envelope as 1 - env_state/env_length.
+	fld1				; (1)
+ 	fild	dword [syn_env_state]	; (1 ienv)
+	fidiv	dword [edi]		; (1 rise)
+	fsubp   			; (fall)
 	
 	;; Intend to play sin(2pi*frequency*framecount/srate)
 
- 	fld	dword [syn_currentf]	;(fall note)
+ 	fld	dword [syn_currentf]	; (fall note)
    	fimul	dword [syn_env_state]	; (fall note*iphase)
   	fld	st0			; (fall note*iphase note*iphase)
  	fadd	st0			; (fall note*iphase 2*note*iphase)
