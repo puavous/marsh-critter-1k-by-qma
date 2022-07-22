@@ -138,17 +138,28 @@ vec3 i_rtMiniPlane2(vec3 Ro, vec3 Rd, vec3 a, vec3 u, vec3 v){
 
 void main()
 {
-    vec3 col;
-
     float iTime = u.x/1000.;
     vec2 s = i_screenCoord(gl_FragCoord.xy, u.yz);
 
+    vec3 col = vec3(0);
+
     // Just to know where we are at - Checkerboard for tick marks:
     //fragColor = vec4(i_testTexture(s),1); return;
+    
+    const int Nsamp = 9; // Supersample at random points inside pixel
+    for (int isample = 0; isample < Nsamp; isample++){
 
     //vec4 sph1 = vec4(sin(iTime),cos(iTime),0,1);
     vec3 eye = vec3(0,0,30);
-    vec3 rd = normalize(vec3(s.xy, -4));
+//    vec3 rd = normalize(vec3(s.xy, -4));
+    // Sample from some, quite uncontrolled, points around pixel:
+    //vec2 i_ssamp = s.xy + 2*vec2(cos(5*isample+s.x*3),sin(2*isample+s.y*7))/u.yz;
+    int ix = isample/3;
+    int iy = isample%3;
+    vec2 i_ssamp = s.xy + vec2(ix,iy)/2.7/u.yz;
+
+
+    vec3 rd = normalize(vec3(i_ssamp, -4));
     // Hit h = Hit(1e9,vec3(0),vec3(1));
 
     // vec4 sph1 = vec4(3*sin(iTime),3*cos(iTime),10*sin(iTime*3),1);
@@ -179,20 +190,25 @@ void main()
     // }
 
     vec3 uvt=i_rtMiniPlane2(eye, rd,
-       vec3(0,-2,0),
+       vec3(0,-2,iTime),
        vec3(1,0,0),
        vec3(0,0,1));
     if (uvt.z>0){
-         col = vec3(sin(length(uvt.xy)-iTime));
+         //col += 1./Nsamp * vec3(sin(length(uvt.xy)-iTime));
+         col += 1./Nsamp * i_checkerBoardTexture(uvt.xy, 1)/(uvt.z/10);
        } else {
          float i_intens = max(0.1,dot(rd,vec3(.3,3-iTime/7,-1)));
-         col = i_intens * vec3(0.3,0.1,i_intens);
+         col += 1./Nsamp * i_intens * vec3(0.3,0.1,i_intens);
     }
 
 
 //    col = sin(h.P);
 //    vec3 point = eye+t*rd;    
 //    col = point;
+
+
+    }
+
     
     // Output to screen
     gl_FragColor = vec4(col,1.0);
