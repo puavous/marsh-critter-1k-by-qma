@@ -308,9 +308,11 @@ global synconst_START
 ;; So make it more like "per-song" data than "pre-set"
 synconst_START:
 synconst_c0freq:
-synconst_basevol:
    	dd	0.004138524	; 0x3b879c75; close to MIDI note 24 freq / 48k * 2 * pi	
 ;;; 	dd	0.016554097	; 0x3c879c75; close to MIDI note 0x30
+synconst_basevol:
+;;;	dd	0.004138524	; (Fuzzdealer) 0x3b879c75; close to MIDI note 24 freq / 48k * 2 * pi	
+	dd	0.0078125	; 1/128.0 hexrepr 0x3c000000. Makes setvol(0x80) equal 1.0. Easy.
 synconst_freqr:
 ;;; 	dd	1.0594630943592953  ; freq. ratio between notes
 	dd	1.0594622	; 0x3f879c75; close to 1.0594630943592953
@@ -320,7 +322,47 @@ synconst_ticklen:
 synconst_BASE:
 
 syn_seq_data:
+;; The only must-set is STEP_LEN(len).
+;; Otherwise the step sequencer will not start stepping.
+;; Everything else can be left in their BSS zero-init.
+;; But the default volume is 0, so NOTE_VOL(vol) is another one.
 
+
+;; A third go at this synth...
+	db	NOTE_VOL(0x30)
+	db	DLAY_VOL(0x40)
+	db      DLAY_LEN(2) 
+	db	LOOP_VOL(0x80)
+;;	db	LOOP_SRC(16)
+	
+	;; Intro
+	db	LOOP_SRC(12)
+
+	db	STEP_LEN(8)   n(d,2) n(d,2) 
+	db	LOOP_SRC(16)
+
+	db	pause pause pause pause
+	db	LOOP_SRC(32)
+	db	DLAY_LEN(3) DLAY_VOL(0x60) NOTE_VOL(0x20)
+	db	n(a,5) n(g,5) pause pause
+	db	LOOP_SRC(64)
+	db	n(g,5) n(f,5) pause pause
+	db	LOOP_SRC(96)
+	db	n(e,5) pause pause pause
+	db	LOOP_SRC(128)
+	db	pause pause pause pause
+	db	pause pause pause pause
+	db	pause pause pause pause
+	db	pause pause pause pause
+	db	pause pause pause pause
+
+	db	STEP_LEN(128)
+	db	pause pause pause pause
+
+
+
+%if 0
+;; Just something to try while picking this up after half a decade
 	db	STEP_LEN(1) 	; This must be set. Others are nicely 0-inited.
 	db	DLAY_VOL(0x75)
 	db	NOTE_VOL(0x75)  
@@ -413,7 +455,7 @@ syn_seq_data:
 	db	pause	pause	pause	pause
 	db	pause	pause	pause	pause
 	db	pause	pause	pause	pause
-
+%endif
 
 %if 0
 ;; The one from Fuzzdealer (2016).
