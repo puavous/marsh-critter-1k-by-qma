@@ -225,7 +225,7 @@ delays:
 	mov	edx, ecx
 	sub	edx, eax
 	
-	fld	dword [syn_dly + 4*edx] ;(audio delayed)
+	fld	dword [syn_dly + 4 * edx] ;(audio delayed)
 	fimul	dword [SPAR(syn_dvol)]
 	fmul	dword [SCONST(synconst_basevol)]
 	faddp				;(audio+dvol*delayed)
@@ -255,6 +255,9 @@ distortion:
 	fld1			; (x |x| 1)
 	faddp			; (x 1+|x|)
 	fdivp			; (x/(1+|x|))
+
+;; Try distortion in loop instead of only output line:
+;;	fld	st0		;(dly mix mix)
 
 outputs:
 	;;  Finally store. Fp stack is now: (dly mix final)
@@ -324,32 +327,43 @@ synconst_BASE:
 syn_seq_data:
 ;; The only must-set is STEP_LEN(len).
 ;; Otherwise the step sequencer will not start stepping.
+;; NOTE_VOL(vol) is another one, to get output.
 ;; Everything else can be left in their BSS zero-init.
-;; But the default volume is 0, so NOTE_VOL(vol) is another one.
 
 
 ;; A third go at this synth...
-	db	NOTE_VOL(0x30)
-	db	DLAY_VOL(0x40)
-	db      DLAY_LEN(2) 
-	db	LOOP_VOL(0x80)
+	db	NOTE_VOL(0xd0)
+	db	DLAY_VOL(0x20)
+	db      DLAY_LEN(12) 
+;;	db	LOOP_VOL(0x80)
 ;;	db	LOOP_SRC(16)
 	
 	;; Intro
-	db	LOOP_SRC(12)
 
-	db	STEP_LEN(8)   n(d,2) n(d,2) 
-	db	LOOP_SRC(16)
+	db	LOOP_SRC(16) LOOP_VOL(0x84)
+	db	STEP_LEN(16)
+	db	n(d,2) 
+	db	pause 
+	db	pause 
+	db	pause 
 
 	db	pause pause pause pause
-	db	LOOP_SRC(32)
-	db	DLAY_LEN(3) DLAY_VOL(0x60) NOTE_VOL(0x20)
-	db	n(a,5) n(g,5) pause pause
-	db	LOOP_SRC(64)
-	db	n(g,5) n(f,5) pause pause
-	db	LOOP_SRC(96)
-	db	n(e,5) pause pause pause
-	db	LOOP_SRC(128)
+
+	db	STEP_LEN(4)
+;;	db	DLAY_VOL(0x20) DLAY_LEN(2)
+	db	n(d,2) n(d,2) pause n(d,2)
+	db	pause pause pause pause
+	db	pause pause pause pause
+	db	pause pause pause pause
+
+	db	LOOP_SRC(16)
+	db	STEP_LEN(2) DLAY_LEN(6)
+	db	NOTE_VOL(0x10)
+	db	n(a,6) n(g,6) n(f,6) pause
+	db	pause pause pause pause
+	db	pause pause pause pause
+	db	pause pause pause pause
+
 	db	pause pause pause pause
 	db	pause pause pause pause
 	db	pause pause pause pause
