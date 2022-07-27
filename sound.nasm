@@ -259,9 +259,10 @@ distortion:
 
 	;;  Finally store. Fp stack is now: (dly mix final)
 %endif
+;; Without distortion, Fp stack would be: (dly mix), so fst fstp fstp below
 
 outputs:
-	;;  Finally store. Fp stack is now: (dly mix)
+	;;  Finally store.
 	fst	dword [edi + 4*ecx]		; -> buffer (dly mix)
 	fstp	dword [syn_rec + 4*ecx] 	; -> mix (dly)
 	fstp	dword [syn_dly + 4*ecx] 	; -> delay ()
@@ -345,9 +346,14 @@ syn_seq_data:
 ;;	db	DLAY_VOL(0x40) DLAY_LEN(0)
 	db	LOOP_SRC(16) LOOP_VOL(0x80)
 	db	STEP_LEN(2)
-	db	DLAY_VOL(0x00) DLAY_LEN(6)
+	db	DLAY_VOL(0x18) DLAY_LEN(6)
+	;; Hmmm... Starting to wonder what the data parts sounds like:
+	;; db	"WAVEfmt ", 0,0,0,0, "RIFF", 0,0,0,0, "data"
+	db	"glCreateShaderPr", "ogramv", 0,0
+	;; .. play the shader string as sequence?
+
 	db	n(a,2) pause n(a,2) pause
-	db	pause n(a,2) pause n(e,2)
+	db	pause pause pause n(e,2)
 
 	db	pause
 	db	pause 
