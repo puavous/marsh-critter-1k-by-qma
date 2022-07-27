@@ -193,10 +193,14 @@ do_sample:
 	mul	dword [SCONST(synconst_ticklen)]	; global tick length
  	mov	dword [SPAR(syn_steplen)], eax	; store step length
 
+%if 0
+% Try without envelope.. very restricted and crude this time.
 envelope:
 	fild	dword [SPAR(syn_steplen)]	; ( steplen )
 	fisub	dword [SPAR(syn_env_state)]	; ( steplen - state)
 	fidiv	dword [SPAR(syn_steplen)]	; ( [len-state]/len =: fall )
+%endif
+;;	fld1
 
 	;; Intend to play sin(2pi*frequency*framecount/srate)
 sawwave:
@@ -205,7 +209,7 @@ sawwave:
 	fld	st0			; (fall note*iphase note*iphase)
   	frndint				; (fall note*iphase round(note*iphase))
  	fsubp				; (fall sawwave)
-	fmulp   			; (fall*sawwave)
+;;	fmulp   			; (fall*sawwave)
 					; == (audio)
 
 	;; Overall volume:
@@ -239,11 +243,11 @@ delays:
 	fimul	dword [SPAR(syn_lvol)]
 	fmul	dword [SCONST(synconst_basevol)] ;(dly dly lvol*looped)
 	faddp			;(dly dly+lvol*looped)
-	fld	st0		;(dly mix mix)
 	
 	;; ---- Delay thingy ends.
 
 %if 0
+	fld	st0		;(dly mix mix)
 distortion:
 ;;; Make a smooth distortion for output (some +8 bytes compressed..)
 ;;; Distortion affects final output, not delay lines. Hmm... could re-design a bit?
@@ -252,11 +256,13 @@ distortion:
 	fld1			; (x |x| 1)
 	faddp			; (x 1+|x|)
 	fdivp			; (x/(1+|x|))
+
+	;;  Finally store. Fp stack is now: (dly mix final)
 %endif
 
 outputs:
-	;;  Finally store. Fp stack is now: (dly mix final)
-	fstp	dword [edi + 4*ecx]		; -> buffer (dly mix)
+	;;  Finally store. Fp stack is now: (dly mix)
+	fst	dword [edi + 4*ecx]		; -> buffer (dly mix)
 	fstp	dword [syn_rec + 4*ecx] 	; -> mix (dly)
 	fstp	dword [syn_dly + 4*ecx] 	; -> delay ()
 
@@ -329,35 +335,38 @@ syn_seq_data:
 
 
 ;; A third go at this synth...
-	db	NOTE_VOL(0x80)
+	db	NOTE_VOL(0x60)
 ;;	db      DLAY_LEN(2) 
 ;;	db	LOOP_VOL(0x80)
 ;;	db	LOOP_SRC(16)
 	
 	;; Intro
 
-	db	DLAY_VOL(0x40) DLAY_LEN(3)
+;;	db	DLAY_VOL(0x40) DLAY_LEN(0)
 	db	LOOP_SRC(16) LOOP_VOL(0x80)
 	db	STEP_LEN(2)
-	db	n(d,2) n(d,3) n(d,4) pause
-	db	pause n(d,3) pause n(d,4)
+	db	DLAY_VOL(0x00) DLAY_LEN(6)
+	db	n(a,2) pause n(a,2) pause
+	db	pause n(a,2) pause n(e,2)
 
-	db	pause 
+	db	pause
 	db	pause 
 	db	pause 
 	db	pause 
 
 	db	pause pause pause pause
 
+	db	DLAY_VOL(0x40)
+
 	db	STEP_LEN(4)
-	db	n(d,2) n(d,2) pause n(d,2)
+	db	pause pause pause pause
 	db	pause pause pause pause
 	db	pause pause pause pause
 	db	pause pause pause pause
 
 	db	LOOP_SRC(64)
 	db	STEP_LEN(16)
-	db	NOTE_VOL(0x20)
+	db	NOTE_VOL(0x10)
 	db	n(a,6) n(g,6) n(c,6) pause
 	db	pause pause pause pause
 	
