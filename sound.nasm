@@ -198,18 +198,13 @@ envelope:
 	fidiv	dword [SPAR(syn_steplen)]	; ( [len-state]/len =: fall )
 
 	;; Intend to play sin(2pi*frequency*framecount/srate)
-phasemod:
+sawwave:
  	fld	dword [SPAR(syn_currentf)]	; (fall note)
    	fimul	dword [SPAR(syn_env_state)]	; (fall note*iphase)
-  	fld	st0			; (fall note*iphase note*iphase)
- 	fadd	st0			; (fall note*iphase 2*note*iphase)
-	fadd	st0			; (fall note*iphase 4*note*iphase)
-	fsin				; (fall note*iphase sin(4*note*iphase))
-	fmul	st2			; (fall note*iphase fall*phaseplus)
-	fmul	st2			; (fall note*iphase fall*phaseplus)
-	faddp	   			; (fall note*iphase+sin(4*note*iphase))
-	fsin				; (fall sin(note*iphase+sin(4*note*iphase)))
-	fmulp   			; (fall*sin(note*iphase+sin(4*note*iphase)))
+	fld	st0			; (fall note*iphase note*iphase)
+  	frndint				; (fall note*iphase round(note*iphase))
+ 	fsubp				; (fall sawwave)
+	fmulp   			; (fall*sawwave)
 					; == (audio)
 
 	;; Overall volume:
@@ -247,6 +242,7 @@ delays:
 	
 	;; ---- Delay thingy ends.
 
+%if 0
 distortion:
 ;;; Make a smooth distortion for output (some +8 bytes compressed..)
 ;;; Distortion affects final output, not delay lines. Hmm... could re-design a bit?
@@ -255,9 +251,7 @@ distortion:
 	fld1			; (x |x| 1)
 	faddp			; (x 1+|x|)
 	fdivp			; (x/(1+|x|))
-
-;; Try distortion in loop instead of only output line:
-;;	fld	st0		;(dly mix mix)
+%endif
 
 outputs:
 	;;  Finally store. Fp stack is now: (dly mix final)
@@ -311,7 +305,9 @@ global synconst_START
 ;; So make it more like "per-song" data than "pre-set"
 synconst_START:
 synconst_c0freq:
-   	dd	0.004138524	; 0x3b879c75; close to MIDI note 24 freq / 48k * 2 * pi	
+;;;   	dd	0.004138524	; 0x3b879c75; close to MIDI note 24 freq / 48k * 2 * pi	
+;;;	dd	0.0006813125
+	dd	0.000682830810547
 ;;; 	dd	0.016554097	; 0x3c879c75; close to MIDI note 0x30
 synconst_basevol:
 ;;;	dd	0.004138524	; (Fuzzdealer) 0x3b879c75; close to MIDI note 24 freq / 48k * 2 * pi	
@@ -332,17 +328,20 @@ syn_seq_data:
 
 
 ;; A third go at this synth...
-	db	NOTE_VOL(0xd0)
-	db	DLAY_VOL(0x20)
-	db      DLAY_LEN(12) 
+	db	NOTE_VOL(0x80)
+;;	db      DLAY_LEN(2) 
 ;;	db	LOOP_VOL(0x80)
 ;;	db	LOOP_SRC(16)
 	
 	;; Intro
 
-	db	LOOP_SRC(16) LOOP_VOL(0x84)
-	db	STEP_LEN(16)
-	db	n(d,2) 
+	db	DLAY_VOL(0x40) DLAY_LEN(3)
+	db	LOOP_SRC(16) LOOP_VOL(0x80)
+	db	STEP_LEN(2)
+	db	n(d,2) n(d,3) n(d,4) pause
+	db	pause n(d,3) pause n(d,4)
+
+	db	pause 
 	db	pause 
 	db	pause 
 	db	pause 
@@ -350,27 +349,25 @@ syn_seq_data:
 	db	pause pause pause pause
 
 	db	STEP_LEN(4)
-;;	db	DLAY_VOL(0x20) DLAY_LEN(2)
 	db	n(d,2) n(d,2) pause n(d,2)
 	db	pause pause pause pause
 	db	pause pause pause pause
 	db	pause pause pause pause
 
-	db	LOOP_SRC(16)
-	db	STEP_LEN(2) DLAY_LEN(6)
-	db	NOTE_VOL(0x10)
-	db	n(a,6) n(g,6) n(f,6) pause
+	db	LOOP_SRC(64)
+	db	STEP_LEN(16)
+	db	NOTE_VOL(0x20)
+	db	n(a,6) n(g,6) n(c,6) pause
 	db	pause pause pause pause
-	db	pause pause pause pause
-	db	pause pause pause pause
-
-	db	pause pause pause pause
-	db	pause pause pause pause
+	
+	db	n(f,5) n(e,5) n(a,4) pause
 	db	pause pause pause pause
 	db	pause pause pause pause
 	db	pause pause pause pause
 
 	db	STEP_LEN(128)
+	db	pause pause pause pause
+	db	pause pause pause pause
 	db	pause pause pause pause
 
 
