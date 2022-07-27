@@ -187,6 +187,7 @@ store_frequency:
  	fstp	dword[SPAR(syn_currentf)]
 
 do_sample:
+	;; TODO: To optimize... Constant step length?? what about??
 	;; Re-compute based on params (may have just changed)
 	mov	eax, [SPAR(syn_tiks)]	; was EDI ---> syn_tiks
 	mul	dword [SCONST(synconst_ticklen)]	; global tick length
