@@ -241,12 +241,20 @@ float i_sdSphereAt( vec3 p, vec4 s )
   return length(p-s.xyz)-s.w;
 }
 
-/** Box; verbatim from Inigo's tutorial at https://iquilezles.org/articles/distfunctions/ */
-float sdBox( vec3 p, vec3 b )
+// /** Box; verbatim from Inigo's tutorial at https://iquilezles.org/articles/distfunctions/ */
+// float sdBox( vec3 p, vec3 b )
+// {
+//   vec3 q = abs(p) - b;
+//   return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
+// }
+
+/** From IQ's tutorial, but converted to one-liner.*/
+float i_sdVerticalCapsule( vec3 p, float h, float r )
 {
-  vec3 q = abs(p) - b;
-  return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
+  //p.y -= clamp( p.y, 0.0, h );
+  return length( p - vec3(0,clamp(p.y,0,h),0) ) - r;
 }
+
 
 /** The union operator for geometries: just pick closest.*/
 float i_opUnion( float d1, float d2){
@@ -254,27 +262,46 @@ float i_opUnion( float d1, float d2){
 }
 
 
+/** Infinite repetition, as "transformation of traversal point, tp" */
+vec3 i_tpRep( in vec3 p, in vec3 c)
+{
+    return mod(p+0.5*c,c)-0.5*c;
+}
 
 float sdf(vec3 p){
+    vec3 i_p = i_tpRep(p, vec3(10,12,40));
     return i_opUnion(
-        sdBox(p, vec3(1,2,3)),
-        i_sdSphereAt(p, vec4(2,0,0,1))
+        i_sdVerticalCapsule(i_p, 1.5, 1),
+        i_sdSphereAt(i_p, vec4(2,0,0,1))
         );
+}
+
+/** Numerical normal; again, from IQ's tutorial on the topic. */
+vec3 normal_of_sdf(vec3 p)
+{
+    const float h = 0.001; // replace by an appropriate value
+    const vec2 k = vec2(1,-1);
+    return normalize( k.xyy*sdf( p + k.xyy*h ) + 
+                      k.yyx*sdf( p + k.yyx*h ) + 
+                      k.yxy*sdf( p + k.yxy*h ) + 
+                      k.xxx*sdf( p + k.xxx*h ) );
 }
 
 vec3 rayMarch_experiment(vec2 s, float iTime){
     //return i_testTexture(s);
     const int max_steps = 80;
     float t = 0;
-    vec3 Ro = vec3(0,0,30);
+    vec3 Ro = vec3(5+sin(iTime),iTime*sin(iTime),30-iTime*iTime);
     vec3 Rd = normalize(vec3(s,-4));
     vec3 loc = Ro;
-    for(int i = 0; i < max_steps; i++){
+    int i;
+    for(i = 0; i < max_steps; i++){
         float d = sdf(loc);
         if (d<=0) break;
         loc += d*Rd;
     }
-    return loc;
+    vec3 n = normal_of_sdf(loc);
+    return n / length(Ro-loc)*100;
 }
 
 void main()
