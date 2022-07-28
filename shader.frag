@@ -232,8 +232,34 @@ vec3 i_rtMiniPlane2(vec3 Ro, vec3 Rd, vec3 a, vec3 u, vec3 v){
 
 // }
 
+/* Let's make it clear that, once again, I'm using Inigo's treasure
+ * trove of tutorials and examples! */
+
+/** Sphere s with center and radius: (x, y, z, radius) */
+float i_sdSphereAt( vec3 p, vec4 s )
+{
+  return length(p-s.xyz)-s.w;
+}
+
+/** Box; verbatim from Inigo's tutorial at https://iquilezles.org/articles/distfunctions/ */
+float sdBox( vec3 p, vec3 b )
+{
+  vec3 q = abs(p) - b;
+  return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
+}
+
+/** The union operator for geometries: just pick closest.*/
+float i_opUnion( float d1, float d2){
+    return min(d1,d2);
+}
+
+
+
 float sdf(vec3 p){
-    return length(p)-1;
+    return i_opUnion(
+        sdBox(p, vec3(1,2,3)),
+        i_sdSphereAt(p, vec4(2,0,0,1))
+        );
 }
 
 vec3 rayMarch_experiment(vec2 s, float iTime){
