@@ -146,7 +146,8 @@ void main()
     // Just to know where we are at - Checkerboard for tick marks:
     //fragColor = vec4(i_testTexture(s),1); return;
     
-    const int Nsamp = 9; // Supersample at random points inside pixel
+    const int nns = 3;
+    const int Nsamp = nns*nns; // Supersample at random points inside pixel
     for (int isample = 0; isample < Nsamp; isample++){
 
     //vec4 sph1 = vec4(sin(iTime),cos(iTime),0,1);
@@ -154,9 +155,9 @@ void main()
 //    vec3 rd = normalize(vec3(s.xy, -4));
     // Sample from some, quite uncontrolled, points around pixel:
     //vec2 i_ssamp = s.xy + 2*vec2(cos(5*isample+s.x*3),sin(2*isample+s.y*7))/u.yz;
-    int ix = isample/3;
-    int iy = isample%3;
-    vec2 i_ssamp = s.xy + vec2(ix,iy)/2.7/u.yz;
+    int ix = isample/nns;
+    int iy = isample%nns;
+    vec2 i_ssamp = s.xy + vec2(ix,iy)/u.yz/nns;
 
 
     vec3 rd = normalize(vec3(i_ssamp, -4));
@@ -193,12 +194,32 @@ void main()
        vec3(0,-2,iTime),
        vec3(1,0,0),
        vec3(0,0,1));
-    if (uvt.z>0){
+
+    vec3 uvt2=i_rtMiniPlane2(eye, rd,
+       vec3(-9,1-iTime,iTime),
+       vec3(0,0,-1),
+       vec3(0,1,0));
+
+    if (uvt.z<0) uvt.z=1e9;
+    if (uvt2.z<0) uvt2.z=1e9;
+    // uvt = (uvt2.z < uvt.z)?uvt2:uvt;
+
+//    if ((0 < uvt2.z ) && (uvt2.z < uvt.z)) uvt = uvt2;
+//    uvt = uvt2;
+//    uvt = min(uvt,uvt2);
+
+//    col += uvt.z / Nsamp / 100; continue;
+
+    if (uvt.z < 1e9){
+         //col += 1./Nsamp * vec3(fract(uvt.x)<.1 || fract(uvt.y)<.1);
          //col += 1./Nsamp * vec3(sin(length(uvt.xy)-iTime));
-         col += 1./Nsamp * i_checkerBoardTexture(uvt.xy, 1)/(uvt.z/10);
+         col += 1./Nsamp * i_checkerBoardTexture(uvt.xy, 1)/uvt.z*39;
        } else {
          float i_intens = max(0.1,dot(rd,vec3(.3,3-iTime/7,-1)));
          col += 1./Nsamp * i_intens * vec3(0.3,0.1,i_intens);
+    }
+    if (uvt2.z < uvt.z){
+      col += 1./Nsamp * i_checkerBoardTexture(uvt2.xy, 1)/uvt2.z*39;
     }
 
 
@@ -208,7 +229,6 @@ void main()
 
 
     }
-
     
     // Output to screen
     gl_FragColor = vec4(col,1.0);
