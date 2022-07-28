@@ -58,6 +58,7 @@ vec3 i_checkerBoardTexture(vec2 uv, float density){
   return vec3(mod(floor(density*uv.x)+floor(density*uv.y), 2.));
 }
 
+/** A test texture: 'tick marks' at 0.1 and 1.0 intervals +colors for xy orientation.*/
 vec3 i_testTexture(vec2 uv){
    return max( 0.2  * i_checkerBoardTexture(uv, 1.0)
                + 0.1 * i_checkerBoardTexture(uv, 10.0),
@@ -67,7 +68,12 @@ vec3 i_testTexture(vec2 uv){
 /* Normalized pixel coordinates (y in [-1,1], x follows aspect ratio).
  */
 vec2 i_screenCoord(vec2 pix, vec2 resolution){
-    return (2*pix - resolution) / resolution.yy;
+    return (2*pix - resolution) / resolution.y;
+}
+
+/** Intersect ray with plane defined by triangle abc as a=a, u=b-a, v=c-a. Return barycentric coordinates and distance to hit as (beta,gamma,t). */
+vec3 i_rtMiniPlane2(vec3 Ro, vec3 Rd, vec3 a, vec3 u, vec3 v){
+  return inverse(mat3(-u,-v,Rd))*(a-Ro);
 }
 
 /* Structure for ray-tracing state.. */
@@ -131,9 +137,118 @@ vec2 i_screenCoord(vec2 pix, vec2 resolution){
 //   return inverse(mat3(a-b,a-c,Rd))*(a-Ro);
 // }
 
-/** Here, give triangle abc as a=a, u=b-a, v=c-a. */
-vec3 i_rtMiniPlane2(vec3 Ro, vec3 Rd, vec3 a, vec3 u, vec3 v){
-  return inverse(mat3(-u,-v,Rd))*(a-Ro);
+
+// void raytrace_plane_experiment(float iTime, vec2 s){
+//     vec3 col = vec3(0);
+
+//     // Just to know where we are at - Checkerboard for tick marks:
+//     //fragColor = vec4(i_testTexture(s),1); return;
+    
+//     const int nns = 3;
+//     const int Nsamp = nns*nns; // Supersample at random points inside pixel
+//     for (int isample = 0; isample < Nsamp; isample++){
+
+//     //vec4 sph1 = vec4(sin(iTime),cos(iTime),0,1);
+//     vec3 eye = vec3(0,0,30);
+// //    vec3 rd = normalize(vec3(s.xy, -4));
+//     // Sample from some, quite uncontrolled, points around pixel:
+//     //vec2 i_ssamp = s.xy + 2*vec2(cos(5*isample+s.x*3),sin(2*isample+s.y*7))/u.yz;
+//     int ix = isample/nns;
+//     int iy = isample%nns;
+//     vec2 i_ssamp = s.xy + vec2(ix,iy)/u.yz/nns;
+
+
+//     vec3 rd = normalize(vec3(i_ssamp, -4));
+//     // Hit h = Hit(1e9,vec3(0),vec3(1));
+
+//     // vec4 sph1 = vec4(3*sin(iTime),3*cos(iTime),10*sin(iTime*3),1);
+//     // rtSphere(h, eye, rd, 0., sph1);
+
+// //    vec3 plane1p = vec3(0,-2-sin(iTime),0);
+// //    vec3 plane2n = vec3(0,1,0);
+// //    rtPlane(h, eye, rd, plane1p, plane2n);
+
+//     // vec2 uv=rtPlane3(h, eye, rd,
+//     //   vec3(0,-2,0),
+//     //   vec3(1,-2,0),
+//     //   vec3(0,-2,1));
+
+//     // if (h.d<1e9){
+//     //   col = vec3(sin(length(uv)+iTime));
+//     // } else {
+//     //   col = vec3(0,0,dot(rd,vec3(1,1,-1)));
+//     // }
+//     // vec3 uvt=rtMiniPlane(eye, rd,
+//     //    vec3(0,-2,0),
+//     //    vec3(1,-2,0),
+//     //    vec3(0,-2,1));
+//     // if (uvt.z>0){
+//     //      col = vec3(sin(length(uvt.xy)-iTime));
+//     //    } else {
+//     //      col = vec3(0.3,0,dot(rd,vec3(1,1,-1)));
+//     // }
+
+//     vec3 uvt=i_rtMiniPlane2(eye, rd,
+//        vec3(0,-2,iTime),
+//        vec3(1,0,0),
+//        vec3(0,0,1));
+
+//     vec3 uvt2=i_rtMiniPlane2(eye, rd,
+//        vec3(-9,1-iTime,iTime),
+//        vec3(0,0,-1),
+//        vec3(0,1,0));
+
+//     if (uvt.z<0) uvt.z=1e9;
+//     if (uvt2.z<0) uvt2.z=1e9;
+//     // uvt = (uvt2.z < uvt.z)?uvt2:uvt;
+
+// //    if ((0 < uvt2.z ) && (uvt2.z < uvt.z)) uvt = uvt2;
+// //    uvt = uvt2;
+// //    uvt = min(uvt,uvt2);
+
+// //    col += uvt.z / Nsamp / 100; continue;
+
+//     if (uvt.z < 1e9){
+//          //col += 1./Nsamp * vec3(fract(uvt.x)<.1 || fract(uvt.y)<.1);
+//          //col += 1./Nsamp * vec3(sin(length(uvt.xy)-iTime));
+//          col += 1./Nsamp * i_checkerBoardTexture(uvt.xy, 1)/uvt.z*39;
+//        } else {
+//          float i_intens = max(0.1,dot(rd,vec3(.3,3-iTime/7,-1)));
+//          col += 1./Nsamp * i_intens * vec3(0.3,0.1,i_intens);
+//     }
+//     if (uvt2.z < uvt.z){
+//       col += 1./Nsamp * i_checkerBoardTexture(uvt2.xy, 1)/uvt2.z*39;
+//     }
+
+
+// //    col = sin(h.P);
+// //    vec3 point = eye+t*rd;    
+// //    col = point;
+
+//     }
+    
+//     // Output to screen
+//     gl_FragColor = vec4(col,1.0);
+
+// }
+
+float sdf(vec3 p){
+    return length(p)-1;
+}
+
+vec3 rayMarch_experiment(vec2 s, float iTime){
+    //return i_testTexture(s);
+    const int max_steps = 80;
+    float t = 0;
+    vec3 Ro = vec3(0,0,30);
+    vec3 Rd = normalize(vec3(s,-4));
+    vec3 loc = Ro;
+    for(int i = 0; i < max_steps; i++){
+        float d = sdf(loc);
+        if (d<=0) break;
+        loc += d*Rd;
+    }
+    return loc;
 }
 
 void main()
@@ -141,95 +256,7 @@ void main()
     float iTime = u.x/1000.;
     vec2 s = i_screenCoord(gl_FragCoord.xy, u.yz);
 
-    vec3 col = vec3(0);
-
-    // Just to know where we are at - Checkerboard for tick marks:
-    //fragColor = vec4(i_testTexture(s),1); return;
-    
-    const int nns = 3;
-    const int Nsamp = nns*nns; // Supersample at random points inside pixel
-    for (int isample = 0; isample < Nsamp; isample++){
-
-    //vec4 sph1 = vec4(sin(iTime),cos(iTime),0,1);
-    vec3 eye = vec3(0,0,30);
-//    vec3 rd = normalize(vec3(s.xy, -4));
-    // Sample from some, quite uncontrolled, points around pixel:
-    //vec2 i_ssamp = s.xy + 2*vec2(cos(5*isample+s.x*3),sin(2*isample+s.y*7))/u.yz;
-    int ix = isample/nns;
-    int iy = isample%nns;
-    vec2 i_ssamp = s.xy + vec2(ix,iy)/u.yz/nns;
-
-
-    vec3 rd = normalize(vec3(i_ssamp, -4));
-    // Hit h = Hit(1e9,vec3(0),vec3(1));
-
-    // vec4 sph1 = vec4(3*sin(iTime),3*cos(iTime),10*sin(iTime*3),1);
-    // rtSphere(h, eye, rd, 0., sph1);
-
-//    vec3 plane1p = vec3(0,-2-sin(iTime),0);
-//    vec3 plane2n = vec3(0,1,0);
-//    rtPlane(h, eye, rd, plane1p, plane2n);
-
-    // vec2 uv=rtPlane3(h, eye, rd,
-    //   vec3(0,-2,0),
-    //   vec3(1,-2,0),
-    //   vec3(0,-2,1));
-
-    // if (h.d<1e9){
-    //   col = vec3(sin(length(uv)+iTime));
-    // } else {
-    //   col = vec3(0,0,dot(rd,vec3(1,1,-1)));
-    // }
-    // vec3 uvt=rtMiniPlane(eye, rd,
-    //    vec3(0,-2,0),
-    //    vec3(1,-2,0),
-    //    vec3(0,-2,1));
-    // if (uvt.z>0){
-    //      col = vec3(sin(length(uvt.xy)-iTime));
-    //    } else {
-    //      col = vec3(0.3,0,dot(rd,vec3(1,1,-1)));
-    // }
-
-    vec3 uvt=i_rtMiniPlane2(eye, rd,
-       vec3(0,-2,iTime),
-       vec3(1,0,0),
-       vec3(0,0,1));
-
-    vec3 uvt2=i_rtMiniPlane2(eye, rd,
-       vec3(-9,1-iTime,iTime),
-       vec3(0,0,-1),
-       vec3(0,1,0));
-
-    if (uvt.z<0) uvt.z=1e9;
-    if (uvt2.z<0) uvt2.z=1e9;
-    // uvt = (uvt2.z < uvt.z)?uvt2:uvt;
-
-//    if ((0 < uvt2.z ) && (uvt2.z < uvt.z)) uvt = uvt2;
-//    uvt = uvt2;
-//    uvt = min(uvt,uvt2);
-
-//    col += uvt.z / Nsamp / 100; continue;
-
-    if (uvt.z < 1e9){
-         //col += 1./Nsamp * vec3(fract(uvt.x)<.1 || fract(uvt.y)<.1);
-         //col += 1./Nsamp * vec3(sin(length(uvt.xy)-iTime));
-         col += 1./Nsamp * i_checkerBoardTexture(uvt.xy, 1)/uvt.z*39;
-       } else {
-         float i_intens = max(0.1,dot(rd,vec3(.3,3-iTime/7,-1)));
-         col += 1./Nsamp * i_intens * vec3(0.3,0.1,i_intens);
-    }
-    if (uvt2.z < uvt.z){
-      col += 1./Nsamp * i_checkerBoardTexture(uvt2.xy, 1)/uvt2.z*39;
-    }
-
-
-//    col = sin(h.P);
-//    vec3 point = eye+t*rd;    
-//    col = point;
-
-
-    }
-    
-    // Output to screen
-    gl_FragColor = vec4(col,1.0);
+    //raytrace_plane_experiment(iTime,s);
+    //gl_FragColor = vec4(i_testTexture(s),1); return; 
+    gl_FragColor = vec4(rayMarch_experiment(s,iTime),1); return;
 }
