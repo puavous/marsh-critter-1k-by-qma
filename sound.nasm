@@ -336,7 +336,7 @@ syn_seq_data:
 
 
 ;; A third go at this synth...
-	db	NOTE_VOL(0x60)
+	db	NOTE_VOL(0x20)
 ;;	db      DLAY_LEN(2) 
 ;;	db	LOOP_VOL(0x80)
 ;;	db	LOOP_SRC(16)
@@ -352,6 +352,7 @@ syn_seq_data:
 	db	"glCreateShaderPr", "ogramv", 0,0
 	;; .. play the shader string as sequence?
 
+	db	NOTE_VOL(0x60)
 	db	n(a,2) pause n(a,2) pause
 	db	pause pause pause n(e,2)
 
