@@ -291,6 +291,47 @@ vec3 i_tpRep( in vec3 p, in vec3 c)
     return mod(p+0.5*c,c)-0.5*c;
 }
 
+// ------------------------
+// Walking through https://iquilezles.org/articles/menger/ for fun and learning..
+// Picking primitives along the way..
+float sdBox( vec3 p, vec3 b )
+{
+  vec3 q = abs(p) - b;
+  return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
+}
+
+// float sdCross( in vec3 p )
+// {
+//   float da = sdBox(p.xyz,vec3(1e9,1.0,1.0)); // "1./0" ok inf from GL4.4>
+//   float db = sdBox(p.yzx,vec3(1.0,1e9,1.0));
+//   float dc = sdBox(p.zxy,vec3(1.0,1.0,1e9));
+//   return min(da,min(db,dc));
+// }
+
+// // The first, little-bit optimized 2d-box version and utility sdBox2 for it..
+// float sdBox2( vec2 p, vec2 b )
+// {
+//   vec2 q = abs(p) - b;
+//   return length(max(q,0.0)) + min(max(q.x,q.y),0.0);
+// }
+
+// float sdCross( in vec3 p )
+// {
+//   float da = sdBox2(p.xy,vec2(1));
+//   float db = sdBox2(p.yz,vec2(1));
+//   float dc = sdBox2(p.zx,vec2(1));
+//   return min(da,min(db,dc));
+// }
+
+// // The much optimized version, observing a goal-specific detail.
+// // (Which is finally embedded in the optimized computation..)
+// float sdCross( in vec3 p )
+// {
+//   float da = max(abs(p.x),abs(p.y));
+//   float db = max(abs(p.y),abs(p.z));
+//   float dc = max(abs(p.z),abs(p.x));
+//   return min(da,min(db,dc))-1.0;
+// }
 
 // /** A first experiment, with sphere and capsule, and weird transforms..*/
 // float sdf(vec3 p){
@@ -305,17 +346,40 @@ vec3 i_tpRep( in vec3 p, in vec3 c)
 //         );
 // }
 
-float sdf(vec3 p){
-    float iTime = u.x/1000.;
-    float i_a = i_sdSphereAt(p, vec4(0,0,0,2));
-    float i_b = i_sdSphereAt(p, vec4(3+2*sin(iTime),0,0,1));
-    return i_smin(
-        i_a,
-        i_b,
-        3
-        );
-}
+// // Another experiment, with smooth-combined balls.
+// float sdf(vec3 p){
+//     float iTime = u.x/1000.;
+//     float i_a = i_sdSphereAt(p, vec4(0,0,0,2));
+//     float i_b = i_sdSphereAt(p, vec4(3+2*sin(iTime),0,0,1));
+//     return i_smin(
+//         i_a,
+//         i_b,
+//         3
+//         );
+// }
 
+// The second-to-last version of Inigo's Menger Sponge tutorial (without material ID etc.)
+float sdf( in vec3 p )
+{
+    float d = sdBox(p,vec3(1.0));
+
+    float s = 1.0;
+    for( int m=0; m<3; m++ )
+    {
+        vec3 a = mod( p*s, 2.0 )-1.0;
+        s *= 3.0;
+        vec3 r = abs(1.0 - 3.0*abs(a));
+
+        float da = max(r.x,r.y);
+        float db = max(r.y,r.z);
+        float dc = max(r.z,r.x);
+        float c = (min(da,min(db,dc))-1.0)/s;
+
+        d = max(d,c);
+    }
+
+    return d;
+}
 
 
 // /** Numerical normal; again, from IQ's tutorial on the topic. */
@@ -361,20 +425,20 @@ vec3 rayMarch_experiment(vec2 s, float iTime){
     //return i_testTexture(s);
     const int max_steps = 80;
     float t = 0;
-    vec3 Ro = vec3(0,0,30-iTime/3);
+    vec3 Ro = vec3(0,3,30-iTime);
     vec3 Rd = normalize(vec3(s,-4));
 
     // Actual march from here to there.
-    vec3 loc = Ro;
     int i;
     for(i = 0; i < max_steps; i++){
-        float d = sdf(loc);
-        if (d<=0.01) break;
-        loc += d*Rd*.7;
+        float d = sdf(Ro+t*Rd);
+        if (d<=0.00001) break;
+        t += d;
     }
+    vec3 loc = Ro+t*Rd;
     vec3 n = normal_of_sdf(loc);
     //return n / length(Ro-loc)*100;
-    return vec3(1-sign(sin(loc.z*10)))*max(0,dot(n, normalize(vec3(1,1,1))));
+    return vec3(max(0,dot(n, normalize(vec3(1,1,3)))));
 }
 
 
