@@ -269,10 +269,13 @@ vec3 i_tpRep( in vec3 p, in vec3 c)
 }
 
 float sdf(vec3 p){
-    vec3 i_p = i_tpRep(p, vec3(10,12,40));
+    float iTime = u.x/1000.;
+    float s = sin(p.z/80*sin(iTime/6)), c = cos(p.z/80*sin(iTime/5)); mat3 rot=mat3(s,c,0,c,-s,0,0,0,1);
+    p = rot*p;
+    p = i_tpRep(p, vec3(10,12,40));
     return i_opUnion(
-        i_sdVerticalCapsule(i_p, 1.5, 1),
-        i_sdSphereAt(i_p, vec4(2,0,0,1))
+        i_sdVerticalCapsule(p, 1.5, 1),
+        i_sdSphereAt(p, vec4(2,0,0,1))
         );
 }
 
@@ -291,14 +294,14 @@ vec3 rayMarch_experiment(vec2 s, float iTime){
     //return i_testTexture(s);
     const int max_steps = 80;
     float t = 0;
-    vec3 Ro = vec3(5+sin(iTime),iTime*sin(iTime),30-iTime*iTime);
+    vec3 Ro = vec3(5+sin(iTime),iTime*sin(iTime),30-iTime);
     vec3 Rd = normalize(vec3(s,-4));
     vec3 loc = Ro;
     int i;
     for(i = 0; i < max_steps; i++){
         float d = sdf(loc);
-        if (d<=0) break;
-        loc += d*Rd;
+        if (d<=0.001) break;
+        loc += d*Rd*.7;
     }
     vec3 n = normal_of_sdf(loc);
     return n / length(Ro-loc)*100;
