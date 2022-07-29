@@ -261,6 +261,29 @@ float i_opUnion( float d1, float d2){
     return min(d1,d2);
 }
 
+// From IQ's treasures.. exponential smooth min (k=32) .. one-lined here.
+float i_smin( float a, float b, float k )
+{
+    //float res = exp2( -k*a ) + exp2( -k*b );
+    return -log2( exp2( -k*a ) + exp2( -k*b ) )/k;
+}
+
+// // Internally inlined, for size comparisons..
+// float smin( float a, float b, float k )
+// {
+//     //float res = exp2( -k*a ) + exp2( -k*b );
+//     return -log2( exp2( -k*a ) + exp2( -k*b ) )/k;
+// }
+
+// // Verbatim version, to debug inlining issues...
+// float smin( float a, float b, float k )
+// {
+//     float res = exp2( -k*a ) + exp2( -k*b );
+//     return -log2( res )/k;
+// }
+
+
+
 
 /** Infinite repetition, as "transformation of traversal point, tp" */
 vec3 i_tpRep( in vec3 p, in vec3 c)
@@ -268,44 +291,92 @@ vec3 i_tpRep( in vec3 p, in vec3 c)
     return mod(p+0.5*c,c)-0.5*c;
 }
 
+
+// /** A first experiment, with sphere and capsule, and weird transforms..*/
+// float sdf(vec3 p){
+//     float iTime = u.x/1000.;
+//     float s = sin(sin(iTime/6)), c = cos(sin(iTime/5));
+//     mat3 rot=mat3(s,c,0,c,-s,0,0,0,1);
+//     p = rot*p;
+//     p = i_tpRep(p, vec3(10,12,40));
+//     return i_opUnion(
+//         i_sdVerticalCapsule(p, 1.5, 1),
+//         i_sdSphereAt(p, vec4(2,0,0,1))
+//         );
+// }
+
 float sdf(vec3 p){
     float iTime = u.x/1000.;
-    float s = sin(p.z/80*sin(iTime/6)), c = cos(p.z/80*sin(iTime/5)); mat3 rot=mat3(s,c,0,c,-s,0,0,0,1);
-    p = rot*p;
-    p = i_tpRep(p, vec3(10,12,40));
-    return i_opUnion(
-        i_sdVerticalCapsule(p, 1.5, 1),
-        i_sdSphereAt(p, vec4(2,0,0,1))
+    float i_a = i_sdSphereAt(p, vec4(0,0,0,2));
+    float i_b = i_sdSphereAt(p, vec4(3+2*sin(iTime),0,0,1));
+    return i_smin(
+        i_a,
+        i_b,
+        3
         );
 }
 
-/** Numerical normal; again, from IQ's tutorial on the topic. */
+
+
+// /** Numerical normal; again, from IQ's tutorial on the topic. */
+// vec3 normal_of_sdf(vec3 p)
+// {
+//     const float h = 0.001; // replace by an appropriate value
+//     const vec2 k = vec2(1,-1);
+//     return normalize( k.xyy*sdf( p + k.xyy*h ) + 
+//                       k.yyx*sdf( p + k.yyx*h ) + 
+//                       k.yxy*sdf( p + k.yxy*h ) + 
+//                       k.xxx*sdf( p + k.xxx*h ) );
+// }
+
+/** Numerical normal; again, from IQ's tutorial on the topic. This _might_ pack best?*/
 vec3 normal_of_sdf(vec3 p)
 {
-    const float h = 0.001; // replace by an appropriate value
-    const vec2 k = vec2(1,-1);
-    return normalize( k.xyy*sdf( p + k.xyy*h ) + 
-                      k.yyx*sdf( p + k.yyx*h ) + 
-                      k.yxy*sdf( p + k.yxy*h ) + 
-                      k.xxx*sdf( p + k.xxx*h ) );
+    const float eps = 0.001; // or some other value
+    vec2 h = vec2(eps,0);
+    return normalize( vec3(sdf(p+h.xyy) - sdf(p-h.xyy),
+                           sdf(p+h.yxy) - sdf(p-h.yxy),
+                           sdf(p+h.yyx) - sdf(p-h.yyx) ) );
 }
+
+
+// vec3 rayMarch_experiment1(vec2 s, float iTime){
+//     //return i_testTexture(s);
+//     const int max_steps = 80;
+//     float t = 0;
+//     vec3 Ro = vec3(5+sin(iTime),iTime*sin(iTime),30-iTime);
+//     vec3 Rd = normalize(vec3(s,-4));
+//     vec3 loc = Ro;
+//     int i;
+//     for(i = 0; i < max_steps; i++){
+//         float d = sdf(loc);
+//         if (d<=0.001) break;
+//         loc += d*Rd*.7;
+//     }
+//     vec3 n = normal_of_sdf(loc);
+//     return n / length(Ro-loc)*100;
+// }
 
 vec3 rayMarch_experiment(vec2 s, float iTime){
     //return i_testTexture(s);
     const int max_steps = 80;
     float t = 0;
-    vec3 Ro = vec3(5+sin(iTime),iTime*sin(iTime),30-iTime);
+    vec3 Ro = vec3(0,0,30-iTime/3);
     vec3 Rd = normalize(vec3(s,-4));
+
+    // Actual march from here to there.
     vec3 loc = Ro;
     int i;
     for(i = 0; i < max_steps; i++){
         float d = sdf(loc);
-        if (d<=0.001) break;
+        if (d<=0.01) break;
         loc += d*Rd*.7;
     }
     vec3 n = normal_of_sdf(loc);
-    return n / length(Ro-loc)*100;
+    //return n / length(Ro-loc)*100;
+    return vec3(max(0,dot(n, normalize(vec3(1,1,1)))));
 }
+
 
 void main()
 {
