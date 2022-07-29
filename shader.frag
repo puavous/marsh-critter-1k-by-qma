@@ -374,7 +374,7 @@ vec3 rayMarch_experiment(vec2 s, float iTime){
     }
     vec3 n = normal_of_sdf(loc);
     //return n / length(Ro-loc)*100;
-    return vec3(max(0,dot(n, normalize(vec3(1,1,1)))));
+    return vec3(1-sign(sin(loc.z*10)))*max(0,dot(n, normalize(vec3(1,1,1))));
 }
 
 
