@@ -94,9 +94,13 @@ void entrypoint( void )
         GLint uloc = oglGetUniformLocation(program, "u");
 
 #ifdef _DEBUG
-        char    info[2048];
-        ((PFNGLGETPROGRAMINFOLOGPROC)wglGetProcAddress("glGetProgramInfoLog"))(program, 1024, NULL, info);
-        MessageBox(0, info, "Shader compile info", MB_OK | MB_ICONEXCLAMATION);
+        GLint isLinked = 0;
+        ((PFNGLGETPROGRAMIVPROC)wglGetProcAddress("glGetProgramiv"))(program, GL_LINK_STATUS, &isLinked);
+        if (isLinked == GL_FALSE) {
+            char    info[2048];
+            ((PFNGLGETPROGRAMINFOLOGPROC)wglGetProcAddress("glGetProgramInfoLog"))(program, 1024, NULL, info);
+            MessageBox(0, info, "Shader compile info", MB_OK | MB_ICONEXCLAMATION);
+        }
 #endif
 
         // Instead of IQ's example, I make the whole RIFF file over there:
