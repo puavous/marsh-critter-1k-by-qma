@@ -1,5 +1,6 @@
 #version 140
 uniform ivec4 u;
+const float iTime = u.x/1000.;  // Yep, name is carried over from shadertoy :).
 
 // Placeholder as of now.. old codes dug up from various hobby events..
 
@@ -292,13 +293,12 @@ vec3 i_tpRep( in vec3 p, in vec3 c)
 
 /** A first experiment, with sphere and capsule, and weird transforms..*/
 float sdf(vec3 p){
-    float iTime = u.x/1000.;
-    float s = sin(sin(iTime/6)), c = cos(sin(iTime/5));
+    float s = sin(3*sin(iTime/6)), c = cos(3*sin(iTime/6));
     mat3 rot=mat3(s,c,0,c,-s,0,0,0,1);
     p = rot*p;
-    p = i_tpRep(p, vec3(10,12,40));
+    p = i_tpRep(p, vec3(15,1e2,40));
     return i_opUnion(
-        i_sdVerticalCapsule(p, 1.5, 1),
+        i_sdVerticalCapsule(p, 15, 1),
         i_sdSphereAt(p, vec4(2,0,0,1))
         );
 }
@@ -355,7 +355,7 @@ vec3 normal_of_sdf(vec3 p)
 //     return n / length(Ro-loc)*100;
 // }
 
-vec3 rayMarch_experiment(vec2 s, float iTime){
+vec3 rayMarch_experiment(vec2 s){
     //return i_testTexture(s);
     const int max_steps = 200;
     const float max_t = 400;
@@ -378,8 +378,8 @@ vec3 rayMarch_experiment(vec2 s, float iTime){
     int i;
     for(i = 0; i < max_steps; i++){
         float d = sdf(Ro+t*Rd);
-        if (d<=0.0001 || t > max_t) break;
-        t += d;
+        if (d<=0.001 || t > max_t) break;
+        t += .95*d;
     }
     vec3 loc = Ro+t*Rd;
     vec3 n = normal_of_sdf(loc);
@@ -390,10 +390,9 @@ vec3 rayMarch_experiment(vec2 s, float iTime){
 
 void main()
 {
-    float iTime = u.x/1000.;
     vec2 s = i_screenCoord(gl_FragCoord.xy, u.yz);
 
     //raytrace_plane_experiment(iTime,s);
     //gl_FragColor = vec4(i_testTexture(s),1); return; 
-    gl_FragColor = vec4(rayMarch_experiment(s,iTime),1); return;
+    gl_FragColor = vec4(rayMarch_experiment(s),1); return;
 }
