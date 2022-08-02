@@ -344,9 +344,10 @@ float sdf(vec3 p){
     //d = i_smine(d, i_sdSphereAt(p, vec4(0,0,0,2)), 3);
     //d = i_smine(d, i_sdTorus(p, vec2(1,.2)), 3);
     for (int i=0;i<6;i++){
-        d = i_smine(d, i_sdSphereAt(p, vec4(iTime/3*sin(i+iTime),0,iTime/3*cos(i+iTime),1)), 4);
+        d = i_smine(d, i_sdSphereAt(p, vec4(iTime/3*sin(i+iTime),sin(iTime+iTime*i),iTime/3*cos(i+iTime),1)), 4);
     }
-    d = i_opUnion(d, i_sdFlatEarth(p, 0-iTime/10));
+    d = i_smine(d, i_sdFlatEarth(p, 0-iTime/10), 6);
+    //d = i_opUnion(d, i_sdFlatEarth(p, 0-iTime/10));
     //float i_a = i_sdSphereAt(p, vec4(0,0,0,2));
     // float i_b = i_sdSphereAt(p, vec4(3+2*sin(iTime),0,0,1));
     return d;
@@ -424,7 +425,7 @@ vec3 normal_of_sdf(vec3 p)
 //     return (max_t-t)/max_t * vec3(max(0,dot(n, normalize(vec3(1,1,3)))));
 // }
 
-const float max_t = 400;
+const float max_t = 500;
 float march_sdf(vec3 Ro, vec3 Rd){
     const int max_steps = 200;
     float t = 0;
@@ -454,9 +455,12 @@ vec3 rayMarch_experiment(vec2 s){
     vec3 loc2 = loc + t2*rdir;
     vec3 n2 = normal_of_sdf(loc2);
 
-    vec3 c =  vec3(max(0,dot(n, normalize(vec3(1,1,3))))); 
-    vec3 c2 = vec3(max(0,dot(n2, normalize(vec3(1,1,3)))));
+    vec3 c =  vec3(max(0,dot(n, normalize(vec3(1,1,-1))))); 
+    vec3 c2 = vec3(max(0,dot(n2, normalize(vec3(1,1,-1)))));
     c = c+.5*c2;
+
+//    vec3 c =  vec3(max(0,dot(n, normalize(vec3(1,1,-1))))); 
+
 
     return (max_t-t)/max_t * c;
 //    return (max_t-t)/max_t * vec3(max(0,dot(n, normalize(vec3(1,1,3)))));
