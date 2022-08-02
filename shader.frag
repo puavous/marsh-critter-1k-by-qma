@@ -242,6 +242,12 @@ float i_sdSphereAt( vec3 p, vec4 s )
   return length(p-s.xyz)-s.w;
 }
 
+/** Torus. One-lined the implementation here.*/
+float i_sdTorus( vec3 p, vec2 t )
+{
+  return length(vec2(length(p.xz)-t.x,p.y))-t.y;
+}
+
 /** Distance from a level "ground", i.e., xz-plane at height p.y=y.*/
 float i_sdFlatEarth(vec3 p, float y)
 {
@@ -329,7 +335,8 @@ vec3 i_tpRep( in vec3 p, in vec3 c)
 // More, more... with balls.
 float sdf(vec3 p){
     float d = 1e9; // Start agglomerating from "infinity".
-    d = i_smine(d, i_sdSphereAt(p, vec4(0,0,0,2)), 3);
+    //d = i_smine(d, i_sdSphereAt(p, vec4(0,0,0,2)), 3);
+    d = i_smine(d, i_sdTorus(p, vec2(1,.2)), 3);
     for (int i=0;i<6;i++){
         d = i_smine(d, i_sdSphereAt(p, vec4(iTime/3*sin(i+iTime),0,iTime/3*cos(i+iTime),1)), 4);
     }
@@ -402,7 +409,7 @@ vec3 rayMarch_experiment(vec2 s){
     int i;
     for(i = 0; i < max_steps; i++){
         float d = sdf(Ro+t*Rd);
-        if (d<=0.001 || t > max_t) break;
+        if (d<=0.001*t || t > max_t) break;
         t += .95*d;
     }
     vec3 loc = Ro+t*Rd;
