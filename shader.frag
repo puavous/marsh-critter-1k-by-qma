@@ -264,7 +264,6 @@ float i_opUnion( float d1, float d2){
 // From IQ's treasures.. exponential smooth min (k=32) .. one-lined here.
 float i_smin( float a, float b, float k )
 {
-    //float res = exp2( -k*a ) + exp2( -k*b );
     return -log2( exp2( -k*a ) + exp2( -k*b ) )/k;
 }
 
@@ -275,14 +274,12 @@ float i_smin( float a, float b, float k )
 //     return -log2( exp2( -k*a ) + exp2( -k*b ) )/k;
 // }
 
-// // Verbatim version, to debug inlining issues...
+// // Verbatim version from IQ's tutorial, to debug inlining issues...
 // float smin( float a, float b, float k )
 // {
 //     float res = exp2( -k*a ) + exp2( -k*b );
 //     return -log2( res )/k;
 // }
-
-
 
 
 /** Infinite repetition, as "transformation of traversal point, tp" */
@@ -291,60 +288,20 @@ vec3 i_tpRep( in vec3 p, in vec3 c)
     return mod(p+0.5*c,c)-0.5*c;
 }
 
-// // // ---------------------------------------------------
-// // // Walking through https://iquilezles.org/articles/menger/ for fun and learning..
-// // Picking primitives along the way..
-// float sdBox( vec3 p, vec3 b )
-// {
-//   vec3 q = abs(p) - b;
-//   return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
-// }
+// ---------------------------------------------------
 
-// // float sdCross( in vec3 p )
-// // {
-// //   float da = sdBox(p.xyz,vec3(1e9,1.0,1.0)); // "1./0" ok inf from GL4.4>
-// //   float db = sdBox(p.yzx,vec3(1.0,1e9,1.0));
-// //   float dc = sdBox(p.zxy,vec3(1.0,1.0,1e9));
-// //   return min(da,min(db,dc));
-// // }
-
-// // // The first, little-bit optimized 2d-box version and utility sdBox2 for it..
-// // float sdBox2( vec2 p, vec2 b )
-// // {
-// //   vec2 q = abs(p) - b;
-// //   return length(max(q,0.0)) + min(max(q.x,q.y),0.0);
-// // }
-
-// // float sdCross( in vec3 p )
-// // {
-// //   float da = sdBox2(p.xy,vec2(1));
-// //   float db = sdBox2(p.yz,vec2(1));
-// //   float dc = sdBox2(p.zx,vec2(1));
-// //   return min(da,min(db,dc));
-// // }
-
-// // // The much optimized version, observing a goal-specific detail.
-// // // (Which is finally embedded in the optimized computation..)
-// // float sdCross( in vec3 p )
-// // {
-// //   float da = max(abs(p.x),abs(p.y));
-// //   float db = max(abs(p.y),abs(p.z));
-// //   float dc = max(abs(p.z),abs(p.x));
-// //   return min(da,min(db,dc))-1.0;
-// // }
-
-// // /** A first experiment, with sphere and capsule, and weird transforms..*/
-// // float sdf(vec3 p){
-// //     float iTime = u.x/1000.;
-// //     float s = sin(sin(iTime/6)), c = cos(sin(iTime/5));
-// //     mat3 rot=mat3(s,c,0,c,-s,0,0,0,1);
-// //     p = rot*p;
-// //     p = i_tpRep(p, vec3(10,12,40));
-// //     return i_opUnion(
-// //         i_sdVerticalCapsule(p, 1.5, 1),
-// //         i_sdSphereAt(p, vec4(2,0,0,1))
-// //         );
-// // }
+/** A first experiment, with sphere and capsule, and weird transforms..*/
+float sdf(vec3 p){
+    float iTime = u.x/1000.;
+    float s = sin(sin(iTime/6)), c = cos(sin(iTime/5));
+    mat3 rot=mat3(s,c,0,c,-s,0,0,0,1);
+    p = rot*p;
+    p = i_tpRep(p, vec3(10,12,40));
+    return i_opUnion(
+        i_sdVerticalCapsule(p, 1.5, 1),
+        i_sdSphereAt(p, vec4(2,0,0,1))
+        );
+}
 
 // // // Another experiment, with smooth-combined balls.
 // // float sdf(vec3 p){
@@ -357,72 +314,6 @@ vec3 i_tpRep( in vec3 p, in vec3 c)
 // //         3
 // //         );
 // // }
-
-// // The second-to-last version of Inigo's Menger Sponge tutorial (without material ID etc.)
-// float sdf( in vec3 p )
-// {
-//     float d = sdBox(p,vec3(1.0));
-
-//     float s = 1.0;
-//     for( int m=0; m<3; m++ )
-//     {
-//         vec3 a = mod( p*s, 2.0 )-1.0;
-//         s *= 3.0;
-//         vec3 r = abs(1.0 - 3.0*abs(a));
-
-//         float da = max(r.x,r.y);
-//         float db = max(r.y,r.z);
-//         float dc = max(r.z,r.x);
-//         float c = (min(da,min(db,dc))-1.0)/s;
-
-//         d = max(d,c);
-//     }
-
-//     return d;
-// }
-
-
-// Just for learning, a pretty brainless copy-paste from https://www.shadertoy.com/view/ltfSWn
-// License terms of the reference code fully acknowledged: only for learning here!!!
-// I won't be using this in my own production until I understand enough about 
-// the math bits. So far, too much magic going on.. I can't say I understand it yet.
-// I leave my copy-paste-modify experiments here though, with relevant references..
-// There is nothing in the code snippet here that couldn't be deciphered by using
-// (a lot of) time and the public tutorials by IQ, especially https://iquilezles.org/articles/distancefractals/
-// and probably some additional math resources in order to understand the
-// distance magic bit with the derivative (dz) computation and log and stuff at the end..
-// So far.. no bonus for me, so I won't be participating with a Mandelbulb-based
-// thing yet in 2022. :/ but maybe I'll have the time to learn soon-ish..
-// I did modify the code in order to try out just some syntactic features
-// of GLSL... Shader minifier would probably do great without such mundane
-// tricks, I think, so this experiment was really just for fun and learning...
-// OK, ok.. tick back one or few times.. I did some alterations to try and
-// understand the math, too.. so.. almost getting to own the ideas, after which any
-// resulting code will be truely my own. So far, not yet there yet. The math is still
-// Inigo's reference implementation from shadertoy, with no permission to use for
-// any purpose. Thus, let's not use it, as of now. I wish there will be a time
-// when I can write this kind of stuff "from scratch" just by understanding the
-// first principles and going from there... not today yet.
-// But wow - this construction is beautiful, emerging from so little code..
-
-float sdf( in vec3 c)
-{
-    vec3 w = c;
-    float m,dz=1,i=0;
-	while (((m = length(w)) < 64) && (i++<4))
-    {
-        // dz = 8*z^7*dz  (original comment from IQ in his example; I don't understand "+1" in it .. seems to work without..)
-		dz = 8*pow(m,7)*dz+1;
-        // z = z^8+c (original comment from IQ; this much I can sort of grasp, with the code that follows..)
-        //float r = length(w); // hmm... r is m, m'kay... so in below code m is r m'kay..
-        float b = 8*acos( w.y / m);
-        float a = 8*atan( w.x, w.z );
-        w = pow(m,8) * vec3( sin(b)*sin(a), cos(b), sin(b)*cos(a) ) + c;
-    }
-    // distance estimation (through the Hubbard-Douady potential) (original comment from IQ; I haven't wrapped my head around this equation at all, as of yet.)
-    return log(m*m)*m/dz/4;
-}
-
 
 
 // /** Numerical normal; again, from IQ's tutorial on the topic. */
@@ -466,35 +357,34 @@ vec3 normal_of_sdf(vec3 p)
 
 vec3 rayMarch_experiment(vec2 s, float iTime){
     //return i_testTexture(s);
-    const int max_steps = 80;
+    const int max_steps = 200;
+    const float max_t = 400;
     float t = 0;
 
-    // // Approach from positive z. orient screen as xy-plane:    
-    // vec3 Ro = vec3(0,1.2,7-iTime/10);
-    // vec3 Rd = normalize(vec3(s,-4));
+    // Approach from positive z. orient screen as xy-plane:    
+    vec3 Ro = vec3(0,1.2,7-iTime/10);
+    vec3 Rd = normalize(vec3(s,-4));
 
     // // Approach from positive y. orient screen as xz-plane:    
     // vec3 Ro = vec3(0,7-iTime/10,6./7);
     // vec3 Rd = normalize(vec3(s.x,-4,s.y));
 
-    // Descend from positive y. orient screen as xy-plane:    
-    // vec3 Ro = vec3(0,2-iTime/10,0);
-    vec3 Ro = vec3(0,1.2-iTime/25,1.125);
-    vec3 Rd = normalize(vec3(s,-2));
-    
-
+    // // Descend from positive y. orient screen as xy-plane:    
+    // // vec3 Ro = vec3(0,2-iTime/10,0);
+    // vec3 Ro = vec3(0,1.2-iTime/25,1.125);
+    // vec3 Rd = normalize(vec3(s,-2));
 
     // Actual march from here to there.
     int i;
     for(i = 0; i < max_steps; i++){
         float d = sdf(Ro+t*Rd);
-        if (d<=0.0001) break;
+        if (d<=0.0001 || t > max_t) break;
         t += d;
     }
     vec3 loc = Ro+t*Rd;
     vec3 n = normal_of_sdf(loc);
     //return n / length(Ro-loc)*100;
-    return vec3(max(0,dot(n, normalize(vec3(1,1,3)))));
+    return (max_t-t)/max_t * vec3(max(0,dot(n, normalize(vec3(1,1,3)))));
 }
 
 
