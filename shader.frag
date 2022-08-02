@@ -1,6 +1,6 @@
 #version 140
 uniform ivec4 u;
-const float iTime = u.x/1000.;  // Yep, name is carried over from shadertoy :).
+float iTime = u.x/1000.;  // Yep, name is carried over from shadertoy :).
 
 // Placeholder as of now.. old codes dug up from various hobby events..
 
@@ -300,6 +300,11 @@ float i_smine( float a, float b, float k )
     return -log( exp( -k*a ) + exp( -k*b ) )/k;
 }
 
+// basic intersect
+float i_intersect( float a, float b)
+{
+    return max(a,b);
+}
 
 /** Infinite repetition, as "transformation of traversal point, tp" */
 vec3 i_tpRep( in vec3 p, in vec3 c)
@@ -334,9 +339,10 @@ vec3 i_tpRep( in vec3 p, in vec3 c)
 
 // More, more... with balls.
 float sdf(vec3 p){
-    float d = 1e9; // Start agglomerating from "infinity".
+    //float d = 1e9; // Start agglomerating from "infinity".
+    float d = i_sdSphereAt(p, vec4(0,0,0,2));
     //d = i_smine(d, i_sdSphereAt(p, vec4(0,0,0,2)), 3);
-    d = i_smine(d, i_sdTorus(p, vec2(1,.2)), 3);
+    //d = i_smine(d, i_sdTorus(p, vec2(1,.2)), 3);
     for (int i=0;i<6;i++){
         d = i_smine(d, i_sdSphereAt(p, vec4(iTime/3*sin(i+iTime),0,iTime/3*cos(i+iTime),1)), 4);
     }
@@ -386,24 +392,42 @@ vec3 normal_of_sdf(vec3 p)
 //     return n / length(Ro-loc)*100;
 // }
 
-vec3 rayMarch_experiment(vec2 s){
-    //return i_testTexture(s);
+// vec3 rayMarch_experiment2(vec2 s){
+//     //return i_testTexture(s);
+//     const int max_steps = 200;
+//     const float max_t = 400;
+//     float t = 0;
+
+//     // Approach from positive z. orient screen as xy-plane:    
+//     vec3 Ro = vec3(0,1.2,17-iTime/10);
+//     vec3 Rd = normalize(vec3(s,-4));
+
+//     // // Approach from positive y. orient screen as xz-plane:    
+//     // vec3 Ro = vec3(0,7-iTime/10,6./7);
+//     // vec3 Rd = normalize(vec3(s.x,-4,s.y));
+
+//     // // Descend from positive y. orient screen as xy-plane:    
+//     // // vec3 Ro = vec3(0,2-iTime/10,0);
+//     // vec3 Ro = vec3(0,1.2-iTime/25,1.125);
+//     // vec3 Rd = normalize(vec3(s,-2));
+
+//     // Actual march from here to there.
+//     int i;
+//     for(i = 0; i < max_steps; i++){
+//         float d = sdf(Ro+t*Rd);
+//         if (d<=0.001*t || t > max_t) break;
+//         t += .95*d;
+//     }
+//     vec3 loc = Ro+t*Rd;
+//     vec3 n = normal_of_sdf(loc);
+//     //return n / length(Ro-loc)*100;
+//     return (max_t-t)/max_t * vec3(max(0,dot(n, normalize(vec3(1,1,3)))));
+// }
+
+const float max_t = 400;
+float march_sdf(vec3 Ro, vec3 Rd){
     const int max_steps = 200;
-    const float max_t = 400;
     float t = 0;
-
-    // Approach from positive z. orient screen as xy-plane:    
-    vec3 Ro = vec3(0,1.2,17-iTime/10);
-    vec3 Rd = normalize(vec3(s,-4));
-
-    // // Approach from positive y. orient screen as xz-plane:    
-    // vec3 Ro = vec3(0,7-iTime/10,6./7);
-    // vec3 Rd = normalize(vec3(s.x,-4,s.y));
-
-    // // Descend from positive y. orient screen as xy-plane:    
-    // // vec3 Ro = vec3(0,2-iTime/10,0);
-    // vec3 Ro = vec3(0,1.2-iTime/25,1.125);
-    // vec3 Rd = normalize(vec3(s,-2));
 
     // Actual march from here to there.
     int i;
@@ -412,10 +436,30 @@ vec3 rayMarch_experiment(vec2 s){
         if (d<=0.001*t || t > max_t) break;
         t += .95*d;
     }
+    return t;
+}
+
+vec3 rayMarch_experiment(vec2 s){
+    // Approach from positive z. orient screen as xy-plane:    
+    vec3 Ro = vec3(0,1.2,17-iTime/10);
+    vec3 Rd = normalize(vec3(s,-4));
+
+    float t = march_sdf(Ro, Rd);
     vec3 loc = Ro+t*Rd;
     vec3 n = normal_of_sdf(loc);
-    //return n / length(Ro-loc)*100;
-    return (max_t-t)/max_t * vec3(max(0,dot(n, normalize(vec3(1,1,3)))));
+
+    // Try some reflection.. a lot of computation going on; slow..
+    vec3 rdir = reflect(Rd,n);
+    float t2 = march_sdf(loc +0.001*rdir, rdir);
+    vec3 loc2 = loc + t2*rdir;
+    vec3 n2 = normal_of_sdf(loc2);
+
+    vec3 c =  vec3(max(0,dot(n, normalize(vec3(1,1,3))))); 
+    vec3 c2 = vec3(max(0,dot(n2, normalize(vec3(1,1,3)))));
+    c = c+.5*c2;
+
+    return (max_t-t)/max_t * c;
+//    return (max_t-t)/max_t * vec3(max(0,dot(n, normalize(vec3(1,1,3)))));
 }
 
 
@@ -425,5 +469,5 @@ void main()
 
     //raytrace_plane_experiment(iTime,s);
     //gl_FragColor = vec4(i_testTexture(s),1); return; 
-    gl_FragColor = vec4(rayMarch_experiment(s),1); return;
+    gl_FragColor = vec4(rayMarch_experiment(s),1);
 }
