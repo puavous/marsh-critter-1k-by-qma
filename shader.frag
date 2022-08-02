@@ -242,6 +242,12 @@ float i_sdSphereAt( vec3 p, vec4 s )
   return length(p-s.xyz)-s.w;
 }
 
+/** Distance from a level "ground", i.e., xz-plane at height p.y=y.*/
+float i_sdFlatEarth(vec3 p, float y)
+{
+    return p.y-y;
+}
+
 // /** Box; verbatim from Inigo's tutorial at https://iquilezles.org/articles/distfunctions/ */
 // float sdBox( vec3 p, vec3 b )
 // {
@@ -282,6 +288,12 @@ float i_smin( float a, float b, float k )
 //     return -log2( res )/k;
 // }
 
+// Version that uses e instead of 2.. maybe not correct, but minimal..
+float i_smine( float a, float b, float k )
+{
+    return -log( exp( -k*a ) + exp( -k*b ) )/k;
+}
+
 
 /** Infinite repetition, as "transformation of traversal point, tp" */
 vec3 i_tpRep( in vec3 p, in vec3 c)
@@ -291,29 +303,41 @@ vec3 i_tpRep( in vec3 p, in vec3 c)
 
 // ---------------------------------------------------
 
-/** A first experiment, with sphere and capsule, and weird transforms..*/
-float sdf(vec3 p){
-    float s = sin(3*sin(iTime/6)), c = cos(3*sin(iTime/6));
-    mat3 rot=mat3(s,c,0,c,-s,0,0,0,1);
-    p = rot*p;
-    p = i_tpRep(p, vec3(15,1e2,40));
-    return i_opUnion(
-        i_sdVerticalCapsule(p, 15, 1),
-        i_sdSphereAt(p, vec4(2,0,0,1))
-        );
-}
+// /** A first experiment, with sphere and capsule, and weird transforms..*/
+// float sdf(vec3 p){
+//     float s = sin(3*sin(iTime/6)), c = cos(3*sin(iTime/6));
+//     mat3 rot=mat3(s,c,0,c,-s,0,0,0,1);
+//     p = rot*p;
+//     p = i_tpRep(p, vec3(15,1e2,40));
+//     return i_opUnion(
+//         i_sdVerticalCapsule(p, 15, 1),
+//         i_sdSphereAt(p, vec4(2,0,0,1))
+//         );
+// }
 
-// // // Another experiment, with smooth-combined balls.
-// // float sdf(vec3 p){
-// //     float iTime = u.x/1000.;
-// //     float i_a = i_sdSphereAt(p, vec4(0,0,0,2));
-// //     float i_b = i_sdSphereAt(p, vec4(3+2*sin(iTime),0,0,1));
-// //     return i_smin(
-// //         i_a,
-// //         i_b,
-// //         3
-// //         );
-// // }
+// // Another experiment, with smooth-combined balls.
+// float sdf(vec3 p){
+//     float i_a = i_sdSphereAt(p, vec4(0,0,0,2));
+//     float i_b = i_sdSphereAt(p, vec4(3+2*sin(iTime),0,0,1));
+//     return i_smine(
+//         i_a,
+//         i_b,
+//         3
+//         );
+// }
+
+// More, more... with balls.
+float sdf(vec3 p){
+    float d = 1e9; // Start agglomerating from "infinity".
+    d = i_smine(d, i_sdSphereAt(p, vec4(0,0,0,2)), 3);
+    for (int i=0;i<6;i++){
+        d = i_smine(d, i_sdSphereAt(p, vec4(iTime/3*sin(i+iTime),0,iTime/3*cos(i+iTime),1)), 4);
+    }
+    d = i_opUnion(d, i_sdFlatEarth(p, 0-iTime/10));
+    //float i_a = i_sdSphereAt(p, vec4(0,0,0,2));
+    // float i_b = i_sdSphereAt(p, vec4(3+2*sin(iTime),0,0,1));
+    return d;
+}
 
 
 // /** Numerical normal; again, from IQ's tutorial on the topic. */
@@ -362,7 +386,7 @@ vec3 rayMarch_experiment(vec2 s){
     float t = 0;
 
     // Approach from positive z. orient screen as xy-plane:    
-    vec3 Ro = vec3(0,1.2,7-iTime/10);
+    vec3 Ro = vec3(0,1.2,17-iTime/10);
     vec3 Rd = normalize(vec3(s,-4));
 
     // // Approach from positive y. orient screen as xz-plane:    
