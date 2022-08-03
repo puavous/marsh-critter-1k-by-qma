@@ -31,7 +31,8 @@ global  _RIFF_header
     ;; /* Audio format, WAVE_FORMAT_IEEE_FLOAT==3 and #channels */ 
 	dw WAVE_FORMAT_IEEE_FLOAT, AUDIO_NUMCHANNELS
     ;; /* Sample rate */ MZK_RATE,
-sample_rate:
+;; Could have a label for the integer, if some computations need it:
+;;sample_rate:
 	dd AUDIO_SAMPLERATE
     ;;/* Byte rate */
 	dd AUDIO_SAMPLERATE * AUDIO_NUMCHANNELS * SIZEOF_IEEE_FLOAT
@@ -48,7 +49,7 @@ sample_rate:
 
 syn_sequence:
 	;; Try something from just above, repeated:
-	db "fmt fmt fmt fmt fmt datadatadata"
+	db "fmt     fmt     fmt datadatadata"
 	db "fmt fmt fmt fmt fmt datadatadata"
 	;; Yep.. let us 'compose a song' called Etudes of Minified Shader Code:
 	db "float f=length(y-vec4(0,0,0,2).xyz)-vec4(0,0,0,2).w;"
@@ -174,22 +175,20 @@ new_note:
 	fldz
 	jz	store_frequency
 	fadd	dword [SCONST(synconst_c0freq)]
-pow_to_frequency:
+.pow_to_frequency:
 	fmul	dword [SCONST(synconst_freqr)]
 	dec	ax
-	jnz	pow_to_frequency
+	jnz	.pow_to_frequency
 store_frequency:
  	fstp	dword[SPAR(syn_currentf)]
 
 do_sample:
-sine:
  	fld	dword [SPAR(syn_currentf)]	; (fall note)
    	fimul	dword [SPAR(syn_env_state)]	; (fall note*iphase)
+	;; Sine wave - tiniest signal I can think of in x87..
 	fsin
 %if 0
 sawwave:
- 	fld	dword [SPAR(syn_currentf)]	; (fall note)
-   	fimul	dword [SPAR(syn_env_state)]	; (fall note*iphase)
 	fld	st0			; (fall note*iphase note*iphase)
   	frndint				; (fall note*iphase round(note*iphase))
  	fsubp				; (fall sawwave)
@@ -224,19 +223,22 @@ global synconst_START
 synconst_START:
 synconst_BASE:
 synconst_c0freq:
-  	dd	0.004138524	; 0x3b879c75; close to MIDI note 24 freq / 48k * 2 * pi	
+;;  	dd	0.004138524	; 0x3b879c75; close to MIDI note 24 freq / 48k * 2 * pi	
+;;	dd	0.0041385279037 ; 0x3b879c7d
+	dd	0.0078125	; 0x3c000000
 ;;;	dd	0.0006813125
 ;;;	dd	0.000682830810547
 ;;; 	dd	0.016554097	; 0x3c879c75; close to MIDI note 0x30
 synconst_freqr:
-;;; 	dd	1.0594630943592953  ; freq. ratio between notes
-	dd	1.0594622	; 0x3f879c75; close to 1.0594630943592953
+;; 	dd	1.0594630943592953  ; 0x3f879c7d freq. ratio between notes
+	dd	1.05945575237	; 0x3f879c3f Out of tune..
+;;	dd	1.0594622	; 0x3f879c75; close to 1.0594630943592953
 synconst_ticklen:
-	TICKLEN equ 0x2400
+	TICKLEN equ 0x2000
 ;;	dd	0x1770   	; sequencer tick length. 0x1770 is 120bpm \w 4-tick note
 ;;	dd	0x1200   	; sequencer tick length.
-	dd	TICKLEN
+	dd	8* TICKLEN
 synconst_delaylen:
 	dd	6 * TICKLEN	; delay length
 synconst_delayvol:
-	dd	0.75
+	dd	0.5		; 0x3f000000
