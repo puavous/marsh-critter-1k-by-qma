@@ -48,11 +48,10 @@ sample_rate:
     ;;/* Subchunk size */
 	dd AUDIO_DURATION_SAMPLES * AUDIO_NUMCHANNELS * SIZEOF_IEEE_FLOAT
 
-;; Make data global, so crinkler can shift things around.
-;;;  ------------------------- synth constants
-;;; (moved to per-song part, actually..)
+;; Some kind of own "song sequence data" would be optimal here
+;; (no need to re-set ESI after copying header to output. Keep on reading here.) 
 
-;; global syn_seq_duration
+
 
 ;; SEGMENT .data
 ;; syn_seq_duration:
@@ -111,6 +110,7 @@ _make_RIFF@0:
 
 	pushad
 
+copy_riff_header:
 	;; Copy the RIFF header to beginning of output (will leave 0 in ECX for next steps, btw..):
 	mov	edi, _riff_data
 	mov	esi, _RIFF_header
@@ -140,7 +140,56 @@ _make_RIFF@0:
 %define SPAR(par) ADDR(ebp, syn_BASE, par)
 %define SCONST(cnst) ADDR(ebx, synconst_BASE, cnst)
 
+;;	mov	dword [SPAR(syn_currentf)], 0.004138524f  ; close to MIDI note 24 freq / 48k * 2 * pi
+
 aud_buf_loop:
+	;; Make a buzz, just.
+ 	fld	dword [SCONST(synconst_c0freq)]	; (note)
+
+	;; Nah, some thinko here; fixit..
+   	fild	dword [SPAR(syn_env_state)] ; (note phase)
+	fidiv	dword [SCONST(synconst_ticklen)] ; ( note lowfr.phase)
+	fsin    ; (note sin[lowfr.phase])
+
+	fld1    ; ( note sin[] 1)
+	fld1	; ( note sin[] 1 1)
+	faddp	; ( note sin[] 2 )
+	faddp	; ( note 2+sin[])
+	fmulp	; (newnote)
+
+;;	fld     st0
+
+   	fimul	dword [SPAR(syn_env_state)]	; (note*iphase)
+	fld	st0			; (note*iphase note*iphase)
+  	frndint				; (note*iphase round(note*iphase))
+ 	fsubp				; (sawwave)
+
+   	fild	dword [SPAR(syn_env_state)] ; (aud phase)
+	fidiv	dword [SCONST(synconst_ticklen)] ; ( aud lowfr.phase)
+	fsin    ; (aud sin[lowfr.phase])
+	fld1
+	fld1
+	faddp
+	faddp	; (aud 1+sin[])
+	fmulp	; newaud
+
+
+outputs:
+	fstp	dword [edi + 4*ecx]
+
+book_keeping:
+	inc	dword [SPAR(syn_env_state)]
+	
+	inc	ecx
+	;;cmp     dword [syn_seq_duration], ecx ; length in bytes
+	cmp	ecx, DURATION
+	
+	jnz	aud_buf_loop
+	
+    popad
+	ret
+
+%if 0
 	;; ---------------------------------------------------------------------
 	;; Only reconfigure state when step length has been reached:
 	mov	eax, dword [SPAR(syn_steplen)]
@@ -193,13 +242,11 @@ do_sample:
 	mul	dword [SCONST(synconst_ticklen)]	; global tick length
  	mov	dword [SPAR(syn_steplen)], eax	; store step length
 
-%if 0
 % Try without envelope.. very restricted and crude this time.
 envelope:
 	fild	dword [SPAR(syn_steplen)]	; ( steplen )
 	fisub	dword [SPAR(syn_env_state)]	; ( steplen - state)
 	fidiv	dword [SPAR(syn_steplen)]	; ( [len-state]/len =: fall )
-%endif
 ;;	fld1
 
 	;; Intend to play sin(2pi*frequency*framecount/srate)
@@ -246,7 +293,6 @@ delays:
 	
 	;; ---- Delay thingy ends.
 
-%if 0
 	fld	st0		;(dly mix mix)
 distortion:
 ;;; Make a smooth distortion for output (some +8 bytes compressed..)
@@ -258,7 +304,6 @@ distortion:
 	fdivp			; (x/(1+|x|))
 
 	;;  Finally store. Fp stack is now: (dly mix final)
-%endif
 ;; Without distortion, Fp stack would be: (dly mix), so fst fstp fstp below
 
 outputs:
@@ -306,6 +351,7 @@ book_keeping:
 %define n(p,o) ((-24 + p+12*o)<<1),
 %define pause  0,
 
+%endif
 
 SEGMENT .rdata
 global synconst_START
@@ -314,20 +360,24 @@ global synconst_START
 synconst_START:
 synconst_c0freq:
 ;;;   	dd	0.004138524	; 0x3b879c75; close to MIDI note 24 freq / 48k * 2 * pi	
-;;;	dd	0.0006813125
-	dd	0.000682830810547
+	dd	0.0006813125
+;;;	dd	0.000682830810547
 ;;; 	dd	0.016554097	; 0x3c879c75; close to MIDI note 0x30
+synconst_ticklen:
+;;	dd	0x1770   	; sequencer tick length. 0x1770 is 120bpm \w 4-tick note
+;;	dd	0x1200   	; sequencer tick length.
+	dd	0x7000   	; sequencer tick length.
+%if 0
 synconst_basevol:
-;;;	dd	0.004138524	; (Fuzzdealer) 0x3b879c75; close to MIDI note 24 freq / 48k * 2 * pi	
+;;;	dd	0.004138524	; (Fuzzdealer) 0x3b879c75; close to MIDI note 24 freq / 48k * 2 * pi
 	dd	0.0078125	; 1/128.0 hexrepr 0x3c000000. Makes setvol(0x80) equal 1.0. Easy.
 synconst_freqr:
 ;;; 	dd	1.0594630943592953  ; freq. ratio between notes
 	dd	1.0594622	; 0x3f879c75; close to 1.0594630943592953
-synconst_ticklen:
-;;	dd	0x1770   	; sequencer tick length. 0x1770 is 120bpm \w 4-tick note
-	dd	0x1200   	; sequencer tick length.
+%endif
 synconst_BASE:
 
+%if 0
 syn_seq_data:
 ;; The only must-set is STEP_LEN(len).
 ;; Otherwise the step sequencer will not start stepping.
@@ -387,7 +437,7 @@ syn_seq_data:
 	db	pause pause pause pause
 	db	pause pause pause pause
 
-
+%endif
 
 %if 0
 ;; Just something to try while picking this up after half a decade
