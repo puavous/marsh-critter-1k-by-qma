@@ -120,8 +120,9 @@ copy_riff_header:
 	;; After this: edi points to beginning of sound output. ecx is 0.
 	;; Then just output sound.
 
+prepare_for_loop:
 ;; Dedicated registers:
-;;   ESI == pointer to next sequencer event
+;;   ESI == (could be?: pointer to next sequencer event)
 ;;   EDI == Beginning of output buffer
 ;;   EAX == The temp of temps
 ;;   EBX == Base pointer to synth / song constants
@@ -132,8 +133,6 @@ copy_riff_header:
 
 	mov	ebp, syn_BASE
 	mov	ebx, synconst_BASE
-;; 	mov	esi, syn_seq_data
-	mov	esi, ebx
 
 ;; Maybe this is a space-saver, even with crinkler.. 
 %define ADDR(r,base,a)   r + ((a) - base)
@@ -159,12 +158,12 @@ aud_buf_loop:
 
 ;;	fld     st0
 
-   	fimul	dword [SPAR(syn_env_state)]	; (note*iphase)
+	fimul	dword [SPAR(syn_env_state)]	; (note*iphase)
 	fld	st0			; (note*iphase note*iphase)
-  	frndint				; (note*iphase round(note*iphase))
+	frndint				; (note*iphase round(note*iphase))
  	fsubp				; (sawwave)
 
-   	fild	dword [SPAR(syn_env_state)] ; (aud phase)
+	fild	dword [SPAR(syn_env_state)] ; (aud phase)
 	fidiv	dword [SCONST(synconst_ticklen)] ; ( aud lowfr.phase)
 	fsin    ; (aud sin[lowfr.phase])
 	fld1
@@ -185,8 +184,9 @@ book_keeping:
 	cmp	ecx, DURATION
 	
 	jnz	aud_buf_loop
-	
-    popad
+
+returningments:
+	popad
 	ret
 
 %if 0
