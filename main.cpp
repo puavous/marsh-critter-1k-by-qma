@@ -109,7 +109,7 @@ void entrypoint( void )
 
         // Hmm.. There appears to be a long delay before audio.. maybe varies between installations?
         // Makes it quite difficult / impossible to synchronize audio and video truly?
-        Sleep(100);
+        // Sleep(100);
         DWORD tbeg = timeGetTime();
         do
         {
