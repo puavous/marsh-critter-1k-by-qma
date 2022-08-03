@@ -131,26 +131,70 @@ prepare_for_loop:
 ;; %define SCONST(cnst) cnst
 
 aud_buf_loop:
-	;; Make a buzz, just.
- 	fld	dword [SCONST(synconst_c0freq)]	; (note)
+	;; ---------------------------------------------------------------------
+	;; Only reconfigure state when step length has been reached.
+	;; Constant tick length for this song.. how to handle first tick now?
+	mov	eax, dword [SCONST(synconst_ticklen)]
+	sub	eax, dword [SPAR(syn_env_state)]
+	;; Observe situation after this, after normal tick:
+	;; If ZF (due to subtraction) then:
+	;;   - step is at end (state==len), so we read data;
+	;;   - (NOT HERE: this occurs on first entry because steplen==state==0)
+	;;   - incidentally, or less incidentally, EAX==0
+	;; Else:
+	;;   - we jump to render sound.
+	jne	do_sample
+	
+	;; ---------------------------------------------------------------------
+	;; Read bytes and reconfigure state.
+	;; First, reset envelope state (EAX==0, as we just observed):
+	mov	dword [SPAR(syn_env_state)], eax
 
-   	fild	dword [SPAR(syn_env_state)] ; (note phase)
-	fidiv	dword [SCONST(synconst_ticklen)] ; ( note lowfr.phase)
+read_from_sequence:
+	;; Read next byte from sequence to DL, and update counter:
+	lodsb
+	;; Dig a note somehow..
+	;;mov	al, 20 ; Meanwhile: Fake it
+	
+new_note:
+	;; We have a note. Compute new frequency or remain at 0 Hz ("silence")
+	fldz
+	cmp	al, 0
+	jz	store_frequency
+	fadd	dword [SCONST(synconst_c0freq)]
+pow_to_frequency:
+	fmul	dword [SCONST(synconst_freqr)]
+	dec	ax
+	jnz	pow_to_frequency
+store_frequency:
+ 	fstp	dword[SPAR(syn_currentf)]
 
-	;; Nah, some thinko here? fixit..
+do_sample:
+sine:
+ 	fld	dword [SPAR(syn_currentf)]	; (fall note)
+   	fimul	dword [SPAR(syn_env_state)]	; (fall note*iphase)
 	fsin
-	fld1
+%if 0
+sawwave:
+ 	fld	dword [SPAR(syn_currentf)]	; (fall note)
+   	fimul	dword [SPAR(syn_env_state)]	; (fall note*iphase)
+	fld	st0			; (fall note*iphase note*iphase)
+  	frndint				; (fall note*iphase round(note*iphase))
+ 	fsubp				; (fall sawwave)
+%endif
+
+delayed:
+	mov	eax, ecx
+	sub	eax, [SCONST(synconst_ticklen)]
+	sub	eax, [SCONST(synconst_ticklen)]
+	sub	eax, [SCONST(synconst_ticklen)]
+	fld	dword[edi + 4*eax]
+	fmul	dword [SCONST(synconst_delayvol)]
 	faddp
-	fmulp
-
-   	fild	dword [SPAR(syn_env_state)] ; (note phase)
-;;	fidiv	dword [SCONST(synconst_ticklen)] ; ( note lowfr.phase)
-
-	fmulp
-	fsin
 
 outputs:
-	fstp	dword [edi + 4*ecx]
+	fstp	dword [edi + 4*ecx]		; -> buffer
+;;	fstp	dword [syn_dly + 4*ecx] 	; -> delay line
 
 book_keeping:
 	inc	dword [SPAR(syn_env_state)]
@@ -173,16 +217,15 @@ synconst_BASE:
 synconst_c0freq:
 ;;;  	dd	0.004138524	; 0x3b879c75; close to MIDI note 24 freq / 48k * 2 * pi	
 
-;;;	dd	0.0006813125
+	dd	0.0006813125
 ;;;	dd	0.000682830810547
- 	dd	0.016554097	; 0x3c879c75; close to MIDI note 0x30
+;;; 	dd	0.016554097	; 0x3c879c75; close to MIDI note 0x30
 synconst_ticklen:
 ;;	dd	0x1770   	; sequencer tick length. 0x1770 is 120bpm \w 4-tick note
 ;;	dd	0x1200   	; sequencer tick length.
-	dd	0x1770   	; sequencer tick length.
-%if 0
+	dd	0x1200   	; sequencer tick length.
 synconst_freqr:
 ;;; 	dd	1.0594630943592953  ; freq. ratio between notes
 	dd	1.0594622	; 0x3f879c75; close to 1.0594630943592953
-%endif
-
+synconst_delayvol:
+	dd	0.5
