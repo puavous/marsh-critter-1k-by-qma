@@ -47,7 +47,19 @@ sample_rate:
 ;; (no need to re-set ESI after copying header to output. Just read it from here.) 
 
 syn_sequence:
-	db 0
+	db "float f=length(y-vec4(0,0,0,2).xyz)-vec4(0,0,0,2).w;"
+	db "float f=length(y-vec4(0,0,0,2).xyz)-vec4(0,0,0,2).w;"
+   	db "f=-log(exp(-6*f)+exp(-6*(y.y-(0-v/10))))/6;"
+   	db "f=-log(exp(-6*f)+exp(-6*(y.y-(0-v/10))))/6;"
+   	db "return f;"
+   	db "return f;"
+   	db "return f;"
+   	db "return f;"
+     	db "f=-log(exp(-4*f)+exp(-4*(length(y-vec4(v/3*sin(r+v),sin(v+v*r),v/3*cos(r+v),1).xyz)-vec4(v/3*sin(r+v),sin(v+v*r),v/3*cos(r+v),1).w)))/4;"
+   	db "f=-log(exp(-6*f)+exp(-6*(y.y-(0-v/10))))/6;"
+;;	db "vec4(vec4(vec4(vec4(vec4(vec4(vec4(vec4(vec4(vec4(vec4("
+;;	db "float float float float float float float float float  "
+;;	db "                           ", 0,0,0,0,0,0,0,0
 
 ;; SEGMENT .data
 ;; syn_seq_duration:
@@ -185,9 +197,7 @@ sawwave:
 
 delayed:
 	mov	eax, ecx
-	sub	eax, [SCONST(synconst_ticklen)]
-	sub	eax, [SCONST(synconst_ticklen)]
-	sub	eax, [SCONST(synconst_ticklen)]
+	sub	eax, [SCONST(synconst_delaylen)]
 	fld	dword[edi + 4*eax]
 	fmul	dword [SCONST(synconst_delayvol)]
 	faddp
@@ -215,17 +225,19 @@ global synconst_START
 synconst_START:
 synconst_BASE:
 synconst_c0freq:
-;;;  	dd	0.004138524	; 0x3b879c75; close to MIDI note 24 freq / 48k * 2 * pi	
-
-	dd	0.0006813125
+  	dd	0.004138524	; 0x3b879c75; close to MIDI note 24 freq / 48k * 2 * pi	
+;;;	dd	0.0006813125
 ;;;	dd	0.000682830810547
 ;;; 	dd	0.016554097	; 0x3c879c75; close to MIDI note 0x30
-synconst_ticklen:
-;;	dd	0x1770   	; sequencer tick length. 0x1770 is 120bpm \w 4-tick note
-;;	dd	0x1200   	; sequencer tick length.
-	dd	0x1200   	; sequencer tick length.
 synconst_freqr:
 ;;; 	dd	1.0594630943592953  ; freq. ratio between notes
 	dd	1.0594622	; 0x3f879c75; close to 1.0594630943592953
+synconst_ticklen:
+	TICKLEN equ 0x2400
+;;	dd	0x1770   	; sequencer tick length. 0x1770 is 120bpm \w 4-tick note
+;;	dd	0x1200   	; sequencer tick length.
+	dd	TICKLEN
+synconst_delaylen:
+	dd	6 * TICKLEN	; delay length
 synconst_delayvol:
-	dd	0.5
+	dd	0.75
