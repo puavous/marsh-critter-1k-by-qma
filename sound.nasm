@@ -47,8 +47,13 @@ sample_rate:
 ;; (no need to re-set ESI after copying header to output. Just read it from here.) 
 
 syn_sequence:
+	;; Try something from just above, repeated:
+	db "fmt fmt fmt fmt fmt datadatadata"
+	db "fmt fmt fmt fmt fmt datadatadata"
+	;; Yep.. let us 'compose a song' called Etudes of Minified Shader Code:
 	db "float f=length(y-vec4(0,0,0,2).xyz)-vec4(0,0,0,2).w;"
 	db "float f=length(y-vec4(0,0,0,2).xyz)-vec4(0,0,0,2).w;"
+%if 0
    	db "f=-log(exp(-6*f)+exp(-6*(y.y-(0-v/10))))/6;"
    	db "f=-log(exp(-6*f)+exp(-6*(y.y-(0-v/10))))/6;"
    	db "return f;"
@@ -60,6 +65,7 @@ syn_sequence:
 ;;	db "vec4(vec4(vec4(vec4(vec4(vec4(vec4(vec4(vec4(vec4(vec4("
 ;;	db "float float float float float float float float float  "
 ;;	db "                           ", 0,0,0,0,0,0,0,0
+%endif
 
 ;; SEGMENT .data
 ;; syn_seq_duration:
@@ -69,22 +75,13 @@ DURATION equ 0x500000
 
 SEGMENT .bss
 global syn_BASE
-;;; State of my monophonic fuzzdelay synth contains frequency and other variables.
+;;; Zero-initialized state of the synth.
 syn_BASE:
 syn_currentf:	resd	1
-;;; Synth pipeline variables - (from old fuzzdelay synth it seems..)
 syn_env_state:	resd	1
-;;; Integer parameters start from here:
-syn_params:
-syn_tiks:	resd	1	; (used as parameter #0)
-syn_steplen:	resd	1	; (not used as parameter #1) ... etc
-syn_nvol:	resd	1
-syn_dlen:	resd	1
-syn_dvol:	resd	1
-syn_lsrc:	resd	1
-syn_lvol:	resd	1
-syn_p7:		resd	1
 
+
+%if 0
 SEGMENT .bss
 global syn_delay_line_space
 ;; At the heart of this particular fuzzdelay synth are the delay lines.
@@ -97,12 +94,15 @@ syn_rec:
 	resd	0x800000
 syn_dly:
 	resd	0x800000
+%endif
 
 global _riff_data
 SEGMENT .bss
 _riff_data:
 	resd     AUDIO_DURATION_SAMPLES * AUDIO_NUMCHANNELS
 
+
+;; ---------------------------------------------------------------
 ;; The synth function that will be called from intro init.
 SEGMENT .text
 
@@ -165,13 +165,13 @@ aud_buf_loop:
 read_from_sequence:
 	;; Read next byte from sequence to DL, and update counter:
 	lodsb
-	;; Dig a note somehow..
-	;;mov	al, 20 ; Meanwhile: Fake it
+	;; Dig a note somehow.. and have ZF indicate pause somehow.
+;;	cmp	al, 0
+	and	al, 00110110b
 	
 new_note:
 	;; We have a note. Compute new frequency or remain at 0 Hz ("silence")
 	fldz
-	cmp	al, 0
 	jz	store_frequency
 	fadd	dword [SCONST(synconst_c0freq)]
 pow_to_frequency:
@@ -204,7 +204,6 @@ delayed:
 
 outputs:
 	fstp	dword [edi + 4*ecx]		; -> buffer
-;;	fstp	dword [syn_dly + 4*ecx] 	; -> delay line
 
 book_keeping:
 	inc	dword [SPAR(syn_env_state)]
