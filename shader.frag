@@ -159,10 +159,27 @@ float march_sdf(vec3 Ro, vec3 Rd){
     return t;
 }
 
+// Ok.. One more experiment from tutorial.. gotta try some soft shadows.
+// From https://iquilezles.org/articles/rmshadows/ obviously..
+// float sharp_shadow( in vec3 ro, in vec3 rd, float mint, float maxt )
+// {
+//     for( float t=mint; t<maxt; )
+//     {
+//         float h = map(ro + rd*t);
+//         if( h<0.001 )
+//             return 0.0;
+//         t += h;
+//     }
+//     return 1.0;
+// }
+
 void main()
 {
     // Build the main logic here, inside main().
     vec2 s = (2*gl_FragCoord.xy-u.yz)/u.z;
+
+    // Set up a light direction, as in a far away extreme point light
+    vec3 light_dir = normalize(vec3(1,1,-1));
 
     // Approach from positive z. orient screen as xy-plane:
     vec3 Ro = vec3(0,1.2,12-iTime/9);
@@ -178,8 +195,8 @@ void main()
     vec3 loc2 = loc + t2*rdir;
     vec3 n2 = normal_of_sdf(loc2);
 
-    vec3 c =  vec3(max(0,dot(n, normalize(vec3(1,1,-1))))); 
-    vec3 c2 = vec3(max(0,dot(n2, normalize(vec3(1,1,-1)))));
+    vec3 c =  vec3(max(0,dot(n, light_dir))); 
+    vec3 c2 = vec3(max(0,dot(n2, light_dir)));
     c = c+.5*c2;
 
     c = (max_t-t)/max_t * c;
