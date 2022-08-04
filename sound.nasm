@@ -200,10 +200,10 @@ read_from_sequence:
 	;; on some not-too-common input character?
 	;; Just re-set pattern from input sometimes?
 	;; It will take the tonal atmosphere to another place.
-	;; and	al, 00101101b
+	 and	al, 00101101b
 	;; and	al, 10010110b
 	;;and	al, 01001011b
-	and	al, 00001011b
+	;;and	al, 00001011b ; or other modifications..
 	
 new_note:
 	;; We have a note. Compute new frequency or remain at 0 Hz ("silence")
@@ -218,12 +218,18 @@ store_frequency:
  	fstp	dword[SPAR(syn_currentf)]
 
 do_sample:
- 	fld	dword [SPAR(syn_currentf)]	; (fall note)
-   	fimul	dword [SPAR(syn_env_state)]	; (fall note*iphase)
+ 	fld	dword [SPAR(syn_currentf)]	; (notefreq)
+   	fimul	dword [SPAR(syn_env_state)]	; (notefreq*iphase)
 	;; Sine wave - tiniest signal I can think of in x87..
 	fsin
+
+	;; Amplitude envelope costs some 9 bytes:
+	fild	dword [SCONST(synconst_ticklen)]
+	fisub	dword [SPAR(syn_env_state)]
+	fidiv	dword [SCONST(synconst_ticklen)]
+	fmulp
 %if 0
-sawwave:
+	;; Saw wave.. aliasing a lot for good and bad..
 	fld	st0			; (fall note*iphase note*iphase)
   	frndint				; (fall note*iphase round(note*iphase))
  	fsubp				; (fall sawwave)
