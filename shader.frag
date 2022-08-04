@@ -161,17 +161,17 @@ float march_sdf(vec3 Ro, vec3 Rd){
 
 // Ok.. One more experiment from tutorial.. gotta try some soft shadows.
 // From https://iquilezles.org/articles/rmshadows/ obviously..
-// float sharp_shadow( in vec3 ro, in vec3 rd, float mint, float maxt )
-// {
-//     for( float t=mint; t<maxt; )
-//     {
-//         float h = map(ro + rd*t);
-//         if( h<0.001 )
-//             return 0.0;
-//         t += h;
-//     }
-//     return 1.0;
-// }
+float sharp_shadow( in vec3 ro, in vec3 rd, float mint, float maxt )
+{
+    for( float t=mint; t<maxt; )
+    {
+        float h = sdf(ro + rd*t);
+        if( h<0.001 )
+            return 0.0;
+        t += h;
+    }
+    return 1.0;
+}
 
 void main()
 {
@@ -195,8 +195,12 @@ void main()
     vec3 loc2 = loc + t2*rdir;
     vec3 n2 = normal_of_sdf(loc2);
 
-    vec3 c =  vec3(max(0,dot(n, light_dir))); 
-    vec3 c2 = vec3(max(0,dot(n2, light_dir)));
+    float shadow = sharp_shadow(loc, light_dir, .001, 100);
+    float shadow2 = sharp_shadow(loc2, light_dir, .001, 100);
+
+    vec3 c =  shadow * vec3(max(0,dot(n, light_dir))); 
+    vec3 c2 = shadow2 * vec3(max(0,dot(n2, light_dir)));
+
     c = c+.5*c2;
 
     c = (max_t-t)/max_t * c;
