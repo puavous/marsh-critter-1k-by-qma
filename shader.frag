@@ -151,18 +151,21 @@ float march_sdf(vec3 Ro, vec3 Rd){
     float t = 0;
 
     // Actual march from here to there.
-    int i;
-    for(i = 0; i < max_steps; i++){
+    for(int i = 0; i++ < max_steps;){
         float d = sdf(Ro+t*Rd);
-        if (d<=0.001*t || t > max_t) break;
+        if (d<0.001*t || t > max_t) break;
         t += .95*d;
     }
     return t;
 }
 
-vec3 rayMarch_experiment(vec2 s){
-    // Approach from positive z. orient screen as xy-plane:    
-    vec3 Ro = vec3(0,1.2,17-iTime/10);
+void main()
+{
+    // Build the main logic here, inside main().
+    vec2 s = (2*gl_FragCoord.xy-u.yz)/u.z;
+
+    // Approach from positive z. orient screen as xy-plane:
+    vec3 Ro = vec3(0,1.2,12-iTime/9);
     vec3 Rd = normalize(vec3(s,-4));
 
     float t = march_sdf(Ro, Rd);
@@ -179,12 +182,6 @@ vec3 rayMarch_experiment(vec2 s){
     vec3 c2 = vec3(max(0,dot(n2, normalize(vec3(1,1,-1)))));
     c = c+.5*c2;
 
-    return (max_t-t)/max_t * c;
-//    return (max_t-t)/max_t * vec3(max(0,dot(n, normalize(vec3(1,1,3)))));
-}
-
-void main()
-{
-    vec2 s = i_screenCoord(gl_FragCoord.xy, u.yz);
-    gl_FragColor = vec4(rayMarch_experiment(s),1);
+    c = (max_t-t)/max_t * c;
+    gl_FragColor = vec4(c,1);
 }
