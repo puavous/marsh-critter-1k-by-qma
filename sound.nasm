@@ -194,7 +194,14 @@ read_from_sequence:
 	lodsb
 	;; Dig a note somehow.. and have ZF indicate pause somehow.
 ;;	cmp	al, 0
-	and	al, 00110110b
+	;; Idea: Rotate this mask pattern every now and then? Maybe based
+	;; on some not-too-common input character?
+	;; Just re-set pattern from input sometimes?
+	;; It will take the tonal atmosphere to another place.
+	;; and	al, 00101101b
+	;; and	al, 10010110b
+	;;and	al, 01001011b
+	and	al, 00001011b
 	
 new_note:
 	;; We have a note. Compute new frequency or remain at 0 Hz ("silence")
