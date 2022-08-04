@@ -121,6 +121,8 @@ syn_dly:
 
 global _riff_data
 SEGMENT .bss
+syn_padding:
+	resd	0x400000
 _riff_data:
 	resd     AUDIO_DURATION_SAMPLES * AUDIO_NUMCHANNELS
 
@@ -145,10 +147,6 @@ copy_riff_header:
 	;; After this: edi points to beginning of sound output. ecx is 0.
 	;; Then just output sound.
 
-	;; Let us try complete re-purposing.. Point to shader string, just:
-extern ??_C@_0DKA@GACMOPJ@?$CDversion?5140?6uniform?5ivec4?5u?$DLfl@
-	mov	esi, ??_C@_0DKA@GACMOPJ@?$CDversion?5140?6uniform?5ivec4?5u?$DLfl@
-
 prepare_for_loop:
 ;; Dedicated registers:
 ;;   ESI == (could be?: pointer to next sequencer event)
@@ -159,6 +157,10 @@ prepare_for_loop:
 ;;   EDX == Preferred temporary data register together with EAX
 ;;   EBP == Base pointer to the synth state variable package.
 ;;   ESP == Stack top would be usable for intermediates/calls
+
+	;; Let us try complete re-purposing.. Point to shader string:
+extern ?shader_frag@@3PBDB
+	mov	esi, [?shader_frag@@3PBDB]
 
 	mov	ebp, syn_BASE
 	mov	ebx, synconst_BASE
