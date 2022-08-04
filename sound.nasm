@@ -48,12 +48,28 @@ global  _RIFF_header
 ;; (no need to re-set ESI after copying header to output. Just read it from here.) 
 
 syn_sequence:
+%if 1
 	;; Try something from just above, repeated:
 	db "fmt     fmt     fmt datadatadata"
 	db "fmt fmt fmt fmt fmt datadatadata"
 	;; Yep.. let us 'compose a song' called Etudes of Minified Shader Code:
 	db "float f=length(y-vec4(0,0,0,2).xyz)-vec4(0,0,0,2).w;"
 	db "float f=length(y-vec4(0,0,0,2).xyz)-vec4(0,0,0,2).w;"
+%endif
+%if 0
+	db "#version 140\n"
+	db  "uniform ivec4 u;"
+	db  "float v=u.x/1e3;"
+	db "float n(vec3 y)"
+	db "{"
+	db   "float f=length(y-vec4(0,0,0,2).xyz)-vec4(0,0,0,2).w;"
+	db   "for(int r=0;r<6;r++)"
+	db     "f=-log(exp(-4*f)+exp(-4*(length(y-vec4(v/3*sin(r+v),sin(v+v*r),v/3*cos(r+v),1).xyz)-vec4(v/3*sin(r+v),sin(v+v*r),v/3*cos(r+v),1).w)))/4;"
+	db   "f=-log(exp(-6*f)+exp(-6*(y.y-(0-v/10))))/6;"
+	db   "return f;"
+	db "}"
+%endif
+
 %if 0
    	db "f=-log(exp(-6*f)+exp(-6*(y.y-(0-v/10))))/6;"
    	db "f=-log(exp(-6*f)+exp(-6*(y.y-(0-v/10))))/6;"
@@ -237,7 +253,7 @@ synconst_ticklen:
 	TICKLEN equ 0x2000
 ;;	dd	0x1770   	; sequencer tick length. 0x1770 is 120bpm \w 4-tick note
 ;;	dd	0x1200   	; sequencer tick length.
-	dd	8* TICKLEN
+	dd	1 * TICKLEN
 synconst_delaylen:
 	dd	6 * TICKLEN	; delay length
 synconst_delayvol:
