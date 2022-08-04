@@ -1,4 +1,10 @@
 ;; Clean start for very minimalistic sound.
+;; This version tries to re-purpose the minified shader string
+;; as a monophonic synth sequence.. converting
+;; "vec3(" and "exp(" into licks in a song... creating a strange symbiosis
+;; between graphics and sound through source code and an obfuscator in
+;; between. Who composed the song? Me, creator of the shader minifier?
+;; Software? All of us together?
 
 ;; I'm compiling currently like this:
 ;; nasm -f win32 -o synth2.obj sound.nasm
@@ -47,8 +53,8 @@ global  _RIFF_header
 ;; Some kind of own "song sequence data" would be optimal here
 ;; (no need to re-set ESI after copying header to output. Just read it from here.) 
 
+%if 0
 syn_sequence:
-%if 1
 	;; Try something from just above, repeated:
 	db "fmt     fmt     fmt datadatadata"
 	db "fmt fmt fmt fmt fmt datadatadata"
@@ -139,6 +145,10 @@ copy_riff_header:
 	;; After this: edi points to beginning of sound output. ecx is 0.
 	;; Then just output sound.
 
+	;; Let us try complete re-purposing.. Point to shader string, just:
+extern ??_C@_0DKA@GACMOPJ@?$CDversion?5140?6uniform?5ivec4?5u?$DLfl@
+	mov	esi, ??_C@_0DKA@GACMOPJ@?$CDversion?5140?6uniform?5ivec4?5u?$DLfl@
+
 prepare_for_loop:
 ;; Dedicated registers:
 ;;   ESI == (could be?: pointer to next sequencer event)
@@ -223,7 +233,8 @@ outputs:
 book_keeping:
 	inc	dword [SPAR(syn_env_state)]
 	inc	ecx
-	cmp	ecx, DURATION
+;;	cmp	ecx, DURATION
+	cmp	ecx, [SCONST(synconst_duration)]
 	
 	jnz	aud_buf_loop
 
@@ -258,3 +269,5 @@ synconst_delaylen:
 	dd	6 * TICKLEN	; delay length
 synconst_delayvol:
 	dd	0.5		; 0x3f000000
+synconst_duration:
+	dd	0x003f0000	; 0x3f0000 samples @48kHz is about 86 seconds
