@@ -117,8 +117,6 @@ void entrypoint( void )
         do
         {
             DWORD t = timeGetTime() - tbeg;
-
-            //oglUniform4f(uloc, (float)t, XRES, YRES, 1.);
             oglUniform4i(uloc, t, XRES, YRES, 1);
             glRects(-1, -1, 1, 1);
             SwapBuffers(hDC);
