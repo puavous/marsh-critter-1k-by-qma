@@ -105,13 +105,14 @@ float fade = 1-smoothstep(20,24,iTime);
 
 // Probably sticking with spheres this time, if I can fit 'em in the 1k..
 float sdf(vec3 p) {
-    float d = i_sdSphere(p, 2);
+    float d = i_sdFlatEarth(p, 0-2*sin(iTime/7));
+    //p.y+=2;
+    d = i_smine(d, i_sdSphere(p, 2), 4);
     for (int i=0;i++<6;){
         d = i_smine(d, i_sdSphere(p - vec3(extent*sin(i+iTime),sin(iTime+iTime*i),extent*cos(i+iTime)),1), 4);
     }
 
     //d = i_smine(d, i_sdFlatEarth(p, 0-iTime/7), 4);
-    d = i_smine(d, i_sdFlatEarth(p, 0-2*sin(iTime/7)), 4);
     return d;
 }
 

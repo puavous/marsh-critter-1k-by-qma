@@ -207,7 +207,8 @@ noupd:
 	;; on some not-too-common input character?
 	;; Just re-set pattern from input sometimes?
 	;; It will take the tonal atmosphere to another place.
-	 and	al, 00101011b
+	;;shr	al, 3
+	and	al, 00101011b
 	;; and	al, 10010110b
 	;;and	al, 01001011b
 	;;and	al, 00001011b ; or other modifications..
@@ -281,6 +282,8 @@ synconst_c0freq:
 ;;  	dd	0.004138524	; 0x3b879c75; close to MIDI note 24 freq / 48k * 2 * pi	
 ;;	dd	0.0041385279037 ; 0x3b879c7d
 	dd	0.0078125	; 0x3c000000
+;;	dd	0.03125		; 0x3d000000
+;;	dd	0.125		; 0x3e000000
 ;;;	dd	0.0006813125
 ;;;	dd	0.000682830810547
 ;;; 	dd	0.016554097	; 0x3c879c75; close to MIDI note 0x30
