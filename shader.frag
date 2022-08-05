@@ -93,24 +93,30 @@ vec3 i_tpRep( in vec3 p, in vec3 c) {
 
 // ---------------------------------------------------
 // Done with one-liners. Following will always end up as code after minification.
+const float eps = 0.001; // or some other value.. epsilon
 
-uniform ivec4 u;
-float iTime = u.x/1000.;  // Yep, name iTime is carried over from shadertoy :).
 // Idunno.. can we have some more definition stuff here? Should we? No idea.. just want an entry here and now 2022 asm...
 // Go with this idea now:
+
+uniform ivec3 u;
+
+float iTime = u.x/1000.;  // Yep, name iTime is carried over from shadertoy :).
+
 float extent = 1+iTime/9;
-vec3 critter_position = vec3(sin(iTime), 5*sin(iTime/7)-5, iTime-20);
+
+vec3 critter_position = vec3(sin(iTime), sin(iTime)+5*sin(iTime/7)-5, 2*iTime-40);
 
 // Set up a light..
 //vec3 light_dir = normalize(vec3(1-iTime/10,1,-1));
 //vec3 light_pos = vec3(1-iTime/10,1,-1);
 vec3 light_pos = vec3(0,6,0);
 
+//vec2 h = vec2(eps,0);
+vec3 h = vec3(eps,0,0);
+
+
 //float fade = smoothstep(0,4,iTime) - smoothstep(20,24,iTime);
 float fade = 1-smoothstep(20,24,iTime);
-
-const float eps = 0.001; // or some other value.. epsilon
-vec2 h = vec2(eps,0);
 
 
 // Probably sticking with spheres this time, if I can fit 'em in the 1k..
@@ -170,7 +176,7 @@ void main()
     // Just color by diffuse component:
     vec3 light_dir = light_pos - loc;
     float diff = max(0,dot(n, normalize(light_dir)));
-    vec3 c = vec3(.1,diff,.2);
+    vec3 c = vec3(.1,diff,.3);
     //vec3 c = vec3(diff);
 
     // // Try some reflection.. a lot of computation going on; slow..

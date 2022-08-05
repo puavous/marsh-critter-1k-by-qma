@@ -47,7 +47,7 @@ void* myglfunc[4];
 #define oglCreateShaderProgramv ((PFNGLCREATESHADERPROGRAMVPROC)myglfunc[0])
 #define oglUseProgram ((PFNGLUSEPROGRAMPROC)myglfunc[1])
 #define oglGetUniformLocation ((PFNGLGETUNIFORMLOCATIONPROC)myglfunc[2])
-#define oglUniform4i ((PFNGLUNIFORM4IPROC)myglfunc[3])
+#define oglUniform3i ((PFNGLUNIFORM3IPROC)myglfunc[3])
 
 #ifndef _DEBUG
 // For a release build, the entrypoint for Crinkler shall be naked - it's not called nor returning.
@@ -88,7 +88,7 @@ void entrypoint( void )
         myglfunc[0] = wglGetProcAddress("glCreateShaderProgramv");
         myglfunc[1] = wglGetProcAddress("glUseProgram");
         myglfunc[2] = wglGetProcAddress("glGetUniformLocation");
-        myglfunc[3] = wglGetProcAddress("glUniform4i");
+        myglfunc[3] = wglGetProcAddress("glUniform3i");
 
 
         // create shader
@@ -118,7 +118,7 @@ void entrypoint( void )
         {
             DWORD t = timeGetTime() - tbeg;
             // t = 15345; // Frozen time for taking a screenshot..
-            oglUniform4i(uloc, t, XRES, YRES, 1);
+            oglUniform3i(uloc, t, XRES, YRES);
             glRects(-1, -1, 1, 1);
             SwapBuffers(hDC);
         } while (!GetAsyncKeyState(VK_ESCAPE));
