@@ -78,27 +78,6 @@ vec3 i_tpRep( in vec3 p, in vec3 c) {
     return mod(p+0.5*c,c)-0.5*c;
 }
 
-// ---------------------------------------------------
-// Done with one-liners. Following will always end up as code after minification.
-
-uniform ivec4 u;
-float iTime = u.x/1000.;  // Yep, name iTime is carried over from shadertoy :).
-// Idunno.. can we have some more definition stuff here? Should we? No idea.. just want an entry here and now 2022 asm...
-// Go with this idea now:
-float extent = 1+sin(iTime);
-float fade = smoothstep(0,4,iTime) - smoothstep(20,24,iTime);
-
-
-// Probably sticking with spheres this time, if I can fit 'en in the 1k..
-float sdf(vec3 p) {
-    float d = i_sdSphere(p, 2);
-    for (int i=0;i<6;i++){
-        d = i_smine(d, i_sdSphere(p - vec3(extent*sin(i+iTime),sin(iTime+iTime*i),extent*cos(i+iTime)),1), 4);
-    }
-    d = i_smine(d, i_sdFlatEarth(p, 0-iTime/10), 4);
-    return d;
-}
-
 // /** Numerical normal; again, from IQ's tutorial on the topic. */
 // vec3 normal_of_sdf(vec3 p)
 // {
@@ -109,6 +88,29 @@ float sdf(vec3 p) {
 //                       k.yxy*sdf( p + k.yxy*h ) + 
 //                       k.xxx*sdf( p + k.xxx*h ) );
 // }
+
+
+
+// ---------------------------------------------------
+// Done with one-liners. Following will always end up as code after minification.
+
+uniform ivec4 u;
+float iTime = u.x/1000.;  // Yep, name iTime is carried over from shadertoy :).
+// Idunno.. can we have some more definition stuff here? Should we? No idea.. just want an entry here and now 2022 asm...
+// Go with this idea now:
+float extent = 1+sin(iTime)+iTime/20;
+float fade = smoothstep(0,4,iTime) - smoothstep(20,24,iTime);
+
+
+// Probably sticking with spheres this time, if I can fit 'en in the 1k..
+float sdf(vec3 p) {
+    float d = i_sdSphere(p, 2);
+    for (int i=0;i++<6;){
+        d = i_smine(d, i_sdSphere(p - vec3(extent*sin(i+iTime),sin(iTime+iTime*i),extent*cos(i+iTime)),1), 4);
+    }
+    d = i_smine(d, i_sdFlatEarth(p, 0-iTime/7), 4);
+    return d;
+}
 
 /** Numerical normal; again, from IQ's tutorial on the topic.
  * This _might_ compress best? At cost of +2 function evals.
@@ -122,16 +124,16 @@ vec3 normal_of_sdf(vec3 p)
                            sdf(p+h.yyx) - sdf(p-h.yyx) ) );
 }
 
-const float max_t = 500;
+const float max_t = 300;
 float march_sdf(vec3 Ro, vec3 Rd){
-    const int max_steps = 200;
+    const int max_steps = 300;
     float t = 0;
 
     // Actual march from here to there.
     for(int i = 0; i++ < max_steps;){
         float d = sdf(Ro+t*Rd);
         if (d<0.001*t || t > max_t) break;
-        t += .95*d;
+        t += d;
     }
     return t;
 }
@@ -172,18 +174,19 @@ void main()
     vec2 s = (2*gl_FragCoord.xy-u.yz)/u.z;
 
     // Set up a light direction, as in a far away extreme point light
-    vec3 light_dir = normalize(vec3(1,1,-1));
+    vec3 light_dir = normalize(vec3(1-iTime/20,1,-1));
 
     // Approach from positive z. orient screen as xy-plane:
-    vec3 Ro = vec3(0,1.2,12-iTime/9);
+    vec3 Ro = vec3(0,1,14-iTime/9);
     vec3 Rd = normalize(vec3(s,-4));
 
     float t = march_sdf(Ro, Rd);
-    vec3 loc = Ro+t*Rd;
+    vec3 loc = Ro + t*Rd;
     vec3 n = normal_of_sdf(loc);
 
     // Just color by diffuse component:
-    vec3 c = vec3(max(0,dot(n, light_dir)));
+    float diff = max(0,dot(n, light_dir)) / log(length(loc));
+    vec3 c = vec3(diff);
 
     // // Try some reflection.. a lot of computation going on; slow..
     // vec3 rdir = reflect(Rd,n);
@@ -200,7 +203,6 @@ void main()
     // c = c+.5*c2;
 
     // c = (max_t-t)/max_t * c;
-
 
     gl_FragColor = fade * vec4(c,1);
 }

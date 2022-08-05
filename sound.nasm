@@ -194,6 +194,12 @@ aud_buf_loop:
 read_from_sequence:
 	;; Read next byte from sequence to DL, and update counter:
 	lodsb
+
+	;; Hack silence after end of show:
+	cmp	ecx, 48000*20
+	jl	noupd
+	xor	al,al
+noupd:
 	;; Dig a note somehow.. and have ZF indicate pause somehow.
 ;;	cmp	al, 0
 	;; Idea: Rotate this mask pattern every now and then? Maybe based
@@ -204,6 +210,7 @@ read_from_sequence:
 	;; and	al, 10010110b
 	;;and	al, 01001011b
 	;;and	al, 00001011b ; or other modifications..
+
 	
 new_note:
 	;; We have a note. Compute new frequency or remain at 0 Hz ("silence")
@@ -283,7 +290,8 @@ synconst_ticklen:
 synconst_delaylen:
 	dd	6 * TICKLEN	; delay length
 synconst_delayvol:
-	dd	0.5		; 0x3f000000
+	;;dd	0.5		; 0x3f000000
+	dd	0.25
 synconst_duration:
 	dd	0x003f0000	; 0x3f0000 samples @48kHz is about 86 seconds
 	;; I need to cut it at some point - both video and audio..
