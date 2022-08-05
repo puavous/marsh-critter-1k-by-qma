@@ -62,9 +62,12 @@ void entrypoint( void )
         // or wishes should be made and documented to 1k intro compocrew about
         // DPI settings? Like "Please run in 1080p and set DPI Scaling to 100%"?
         // Save those precious few bytes in the 1k?
-        
-        //SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_UNAWARE);
+
+        // This line is the one we should discuss(?):
         SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_SYSTEM_AWARE);
+        
+        // These were some alternatives I tried while learning about the API and options it provides:
+        //SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_UNAWARE);
         //SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE);
         
         // Forced mode change and full screen.. not a very nice thing to do, IMHO
