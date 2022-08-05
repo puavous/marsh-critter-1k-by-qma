@@ -196,7 +196,7 @@ read_from_sequence:
 	lodsb
 
 	;; Hack silence after end of show:
-	cmp	ecx, 48000*20
+	cmp	ecx, 0xf0000 ; some seconds.. 48000*20
 	jl	noupd
 	xor	al,al
 noupd:
@@ -206,7 +206,7 @@ noupd:
 	;; on some not-too-common input character?
 	;; Just re-set pattern from input sometimes?
 	;; It will take the tonal atmosphere to another place.
-	 and	al, 00101101b
+	 and	al, 00101011b
 	;; and	al, 10010110b
 	;;and	al, 01001011b
 	;;and	al, 00001011b ; or other modifications..

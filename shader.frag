@@ -130,9 +130,10 @@ float march_sdf(vec3 Ro, vec3 Rd){
     float t = 0;
 
     // Actual march from here to there.
-    for(int i = 0; i++ < max_steps;){
+//    for(int i = 0; (i++ < max_steps) && (t < max_t);){
+    for(int i = 0; (i++ < max_steps);){
         float d = sdf(Ro+t*Rd);
-        if (d<0.001*t || t > max_t) break;
+        if (d<0.001*t) break;
         t += d;
     }
     return t;
@@ -177,8 +178,9 @@ void main()
     vec3 light_dir = normalize(vec3(1-iTime/20,1,-1));
 
     // Approach from positive z. orient screen as xy-plane:
-    vec3 Ro = vec3(0,1,14-iTime/9);
-    vec3 Rd = normalize(vec3(s,-4));
+//    vec3 Ro = vec3(0,1,14-iTime/9);
+    vec3 Ro = vec3(0,0,9);
+    vec3 Rd = normalize(vec3(s,-3));
 
     float t = march_sdf(Ro, Rd);
     vec3 loc = Ro + t*Rd;
@@ -186,7 +188,7 @@ void main()
 
     // Just color by diffuse component:
     float diff = max(0,dot(n, light_dir)) / log(length(loc));
-    vec3 c = vec3(diff);
+    vec3 c = vec3(.1,diff,.2);
 
     // // Try some reflection.. a lot of computation going on; slow..
     // vec3 rdir = reflect(Rd,n);
