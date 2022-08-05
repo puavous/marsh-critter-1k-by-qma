@@ -140,9 +140,8 @@ copy_riff_header:
 	;; Copy the RIFF header to beginning of output (will leave 0 in ECX for next steps, btw..):
 	mov	edi, _riff_data
 	mov	esi, _RIFF_header
-;;	push	11
-;;	pop	ecx
-	mov	ecx, 44
+	push	11
+	pop	ecx
 	rep	movsd
 	;; After this: edi points to beginning of sound output. ecx is 0.
 	;; Then just output sound.
@@ -231,7 +230,8 @@ do_sample:
    	fimul	dword [SPAR(syn_env_state)]	; (notefreq*iphase)
 	;; Sine wave - tiniest signal I can think of in x87..
 	fsin
-%if 0
+
+%ifdef USE_ENVELOPE
 	;; Amplitude envelope costs some 9 bytes:
 	fild	dword [SCONST(synconst_ticklen)]
 	fisub	dword [SPAR(syn_env_state)]
@@ -246,12 +246,14 @@ do_sample:
  	fsubp				; (fall sawwave)
 %endif
 
+%ifdef USE_DELAY_EFFECT
 delayed:
 	mov	eax, ecx
 	sub	eax, [SCONST(synconst_delaylen)]
 	fld	dword[edi + 4*eax]
 	fmul	dword [SCONST(synconst_delayvol)]
 	faddp
+%endif
 
 outputs:
 	fstp	dword [edi + 4*ecx]		; -> buffer
@@ -291,11 +293,14 @@ synconst_ticklen:
 ;;	dd	0x1770   	; sequencer tick length. 0x1770 is 120bpm \w 4-tick note
 ;;	dd	0x1200   	; sequencer tick length.
 	dd	1 * TICKLEN
+
+%ifdef USE_DELAY_EFFECT
 synconst_delaylen:
 	dd	6 * TICKLEN	; delay length
 synconst_delayvol:
 	;;dd	0.5		; 0x3f000000
 	dd	0.25
+%endif
 synconst_duration:
 ;;	dd	0x003f0000	; 0x3f0000 samples @48kHz is about 86 seconds
 	dd	0x110000 ; Close to 24 seconds.. maximum interesting time..

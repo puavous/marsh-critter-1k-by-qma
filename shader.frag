@@ -109,6 +109,7 @@ float sdf(vec3 p) {
     for (int i=0;i++<6;){
         d = i_smine(d, i_sdSphere(p - vec3(extent*sin(i+iTime),sin(iTime+iTime*i),extent*cos(i+iTime)),1), 4);
     }
+
     d = i_smine(d, i_sdFlatEarth(p, 0-iTime/7), 4);
     return d;
 }
@@ -176,7 +177,7 @@ void main()
     vec2 s = (2*gl_FragCoord.xy-u.yz)/u.z;
 
     // Set up a light direction, as in a far away extreme point light
-    vec3 light_dir = normalize(vec3(1-iTime/20,1,-1));
+    vec3 light_dir = normalize(vec3(1-iTime/10,1,-1));
 
     // Approach from positive z. orient screen as xy-plane:
 //    vec3 Ro = vec3(0,1,14-iTime/9);
