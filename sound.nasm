@@ -286,3 +286,5 @@ synconst_delayvol:
 	dd	0.5		; 0x3f000000
 synconst_duration:
 	dd	0x003f0000	; 0x3f0000 samples @48kHz is about 86 seconds
+	;; I need to cut it at some point - both video and audio..
+;;	dd	0x0003f000	; 0x03f000 samples @48kHz is a short verse
