@@ -1,20 +1,12 @@
 #version 140
-uniform ivec4 u;
-float iTime = u.x/1000.;  // Yep, name iTime is carried over from shadertoy :).
-// Idunno.. can we have some more definition stuff here? Should we? No idea.. just want an entry here and now 2022 asm...
-// Go with this idea now:
-float extent = 1+sin(iTime);
 
 /* Let's make it clear that, once again, I'm using Inigo's treasure
  * trove of tutorials and examples! */
 
 // -----------------------------------i----------------------
 // some one-liner functions that current Shader Minifier omits if unused.
-// /** Checker-board with 'density' squares on unit length.
-//  * For usual texture uv coordinates, [0,1]x[0,1] is a black square.
-//  * When uv are normalized screen coordinates, [-1,1]x[-1,1] has 4 squares.
-//  * Once again.. Inigo did it properly ;) ... but here's my own crude helper..
-//  */
+
+/** Checker-board.. Once again.. Inigo did it properly ;) ... but here's my own crude helper.. */
 vec3 i_checkerBoardTexture(vec2 uv, float density) {
   return vec3(mod(floor(density*uv.x)+floor(density*uv.y), 2.));
 }
@@ -87,6 +79,15 @@ vec3 i_tpRep( in vec3 p, in vec3 c) {
 }
 
 // ---------------------------------------------------
+// Done with one-liners. Following will always end up as code after minification.
+
+uniform ivec4 u;
+float iTime = u.x/1000.;  // Yep, name iTime is carried over from shadertoy :).
+// Idunno.. can we have some more definition stuff here? Should we? No idea.. just want an entry here and now 2022 asm...
+// Go with this idea now:
+float extent = 1+sin(iTime);
+float fade = smoothstep(0,4,iTime) - smoothstep(20,24,iTime);
+
 
 // Probably sticking with spheres this time, if I can fit 'en in the 1k..
 float sdf(vec3 p) {
@@ -201,5 +202,5 @@ void main()
     // c = (max_t-t)/max_t * c;
 
 
-    gl_FragColor = vec4(c,1);
+    gl_FragColor = fade * vec4(c,1);
 }
