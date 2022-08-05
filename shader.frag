@@ -103,7 +103,7 @@ float extent = 1+sin(iTime)+iTime/20;
 float fade = 1-smoothstep(20,24,iTime);
 
 
-// Probably sticking with spheres this time, if I can fit 'en in the 1k..
+// Probably sticking with spheres this time, if I can fit 'em in the 1k..
 float sdf(vec3 p) {
     float d = i_sdSphere(p, 2);
     for (int i=0;i++<6;){
