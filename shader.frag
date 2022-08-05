@@ -109,7 +109,7 @@ vec3 critter_position = vec3(sin(iTime), sin(iTime)+5*sin(iTime/7)-5, 2*iTime-40
 // Set up a light..
 //vec3 light_dir = normalize(vec3(1-iTime/10,1,-1));
 //vec3 light_pos = vec3(1-iTime/10,1,-1);
-vec3 light_pos = vec3(0,6,0);
+vec3 light_pos = vec3(6,6,0);
 
 //vec2 h = vec2(eps,0);
 vec3 h = vec3(eps,0,0);

@@ -208,7 +208,8 @@ noupd:
 	;; Just re-set pattern from input sometimes?
 	;; It will take the tonal atmosphere to another place.
 	;;shr	al, 3
-	and	al, 00101011b
+	and	al, 00011011b
+	;;and	al, 00101011b
 	;; and	al, 10010110b
 	;;and	al, 01001011b
 	;;and	al, 00001011b ; or other modifications..
@@ -306,6 +307,7 @@ synconst_delayvol:
 %endif
 synconst_duration:
 ;;	dd	0x003f0000	; 0x3f0000 samples @48kHz is about 86 seconds
-	dd	0x110000 ; Close to 24 seconds.. maximum interesting time..
+;;	dd	0x110000 ; Close to 24 seconds.. maximum interesting time..
+	dd	0x100000 ; Close to 24 seconds.. maximum interesting time..
 	;; I need to cut it at some point - both video and audio..
 ;;	dd	0x0003f000	; 0x03f000 samples @48kHz is a short verse
