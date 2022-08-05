@@ -2,6 +2,8 @@
 uniform ivec4 u;
 float iTime = u.x/1000.;  // Yep, name iTime is carried over from shadertoy :).
 // Idunno.. can we have some more definition stuff here? Should we? No idea.. just want an entry here and now 2022 asm...
+// Go with this idea now:
+float awayness = iTime;
 
 /* Let's make it clear that, once again, I'm using Inigo's treasure
  * trove of tutorials and examples! */
@@ -85,7 +87,7 @@ vec3 i_tpRep( in vec3 p, in vec3 c) {
 float sdf(vec3 p) {
     float d = i_sdSphereAt(p, vec4(0,0,0,2));
     for (int i=0;i<6;i++){
-        d = i_smine(d, i_sdSphereAt(p, vec4(iTime/3*sin(i+iTime),sin(iTime+iTime*i),iTime/3*cos(i+iTime),1)), 4);
+        d = i_smine(d, i_sdSphereAt(p, vec4(awayness/3*sin(i+iTime),sin(iTime+iTime*i),awayness/3*cos(i+iTime),1)), 4);
     }
     d = i_smine(d, i_sdFlatEarth(p, 0-iTime/10), 6);
     return d;
