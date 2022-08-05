@@ -3,7 +3,7 @@ uniform ivec4 u;
 float iTime = u.x/1000.;  // Yep, name iTime is carried over from shadertoy :).
 // Idunno.. can we have some more definition stuff here? Should we? No idea.. just want an entry here and now 2022 asm...
 // Go with this idea now:
-float awayness = iTime;
+float awayness = 1+sin(iTime);
 
 /* Let's make it clear that, once again, I'm using Inigo's treasure
  * trove of tutorials and examples! */
@@ -39,6 +39,11 @@ vec3 i_rtMiniPlane2(vec3 Ro, vec3 Rd, vec3 a, vec3 u, vec3 v) {
 /** Sphere s with center and radius: (x, y, z, radius) */
 float i_sdSphereAt( vec3 p, vec4 s ) {
   return length(p-s.xyz)-s.w;
+}
+
+/** Sphere at origin; radius r */
+float i_sdSphere( vec3 p, float r ) {
+  return length(p)-r;
 }
 
 /** Torus. One-lined the implementation here.*/
@@ -85,11 +90,12 @@ vec3 i_tpRep( in vec3 p, in vec3 c) {
 
 // Probably sticking with spheres this time, if I can fit 'en in the 1k..
 float sdf(vec3 p) {
-    float d = i_sdSphereAt(p, vec4(0,0,0,2));
+    float d = i_sdSphere(p, 2);
     for (int i=0;i<6;i++){
-        d = i_smine(d, i_sdSphereAt(p, vec4(awayness/3*sin(i+iTime),sin(iTime+iTime*i),awayness/3*cos(i+iTime),1)), 4);
+        //d = i_smine(d, i_sdSphereAt(p, vec4(awayness/3*sin(i+iTime),sin(iTime+iTime*i),awayness/3*cos(i+iTime),1)), 4);
+        d = i_smine(d, i_sdSphere(p - vec3(awayness*sin(i+iTime),sin(iTime+iTime*i),awayness*cos(i+iTime)),1), 4);
     }
-    d = i_smine(d, i_sdFlatEarth(p, 0-iTime/10), 6);
+    d = i_smine(d, i_sdFlatEarth(p, 0-iTime/10), 4);
     return d;
 }
 
