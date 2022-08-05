@@ -104,7 +104,7 @@ float iTime = u.x/1000.;  // Yep, name iTime is carried over from shadertoy :).
 
 float extent = 1+iTime/9;
 
-vec3 critter_position = vec3(sin(iTime), sin(iTime)+5*sin(iTime/7)-5, 2*iTime-40);
+vec3 critter_position = vec3(2*sin(iTime), sin(iTime)+5*sin(iTime/7)-5, 2*iTime-55);
 
 // Set up a light..
 //vec3 light_dir = normalize(vec3(1-iTime/10,1,-1));
@@ -166,7 +166,7 @@ void main()
 
     // Approach from positive z. orient screen as xy-plane:
 //    vec3 Ro = vec3(0,1,14-iTime/9);
-    vec3 Ro = vec3(0,0,9);
+    vec3 Ro = vec3(0);
     vec3 Rd = normalize(vec3(i_s,-3));
 
     float t = march_sdf(Ro, Rd);
