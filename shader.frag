@@ -98,15 +98,27 @@ uniform ivec4 u;
 float iTime = u.x/1000.;  // Yep, name iTime is carried over from shadertoy :).
 // Idunno.. can we have some more definition stuff here? Should we? No idea.. just want an entry here and now 2022 asm...
 // Go with this idea now:
-float extent = 1+sin(iTime)+iTime/20;
+float extent = 1+iTime/9;
+vec3 critter_position = vec3(sin(iTime), 5*sin(iTime/7)-5, iTime-20);
+
+// Set up a light..
+//vec3 light_dir = normalize(vec3(1-iTime/10,1,-1));
+//vec3 light_pos = vec3(1-iTime/10,1,-1);
+vec3 light_pos = vec3(0,6,0);
+
 //float fade = smoothstep(0,4,iTime) - smoothstep(20,24,iTime);
 float fade = 1-smoothstep(20,24,iTime);
+
+const float eps = 0.001; // or some other value.. epsilon
+vec2 h = vec2(eps,0);
 
 
 // Probably sticking with spheres this time, if I can fit 'em in the 1k..
 float sdf(vec3 p) {
-    float d = i_sdFlatEarth(p, 0-2*sin(iTime/7));
-    //p.y+=2;
+//    float d = i_sdFlatEarth(p, -2);
+    float d = p.y+2+sin(p.z-iTime)/9;
+    p -= critter_position;
+    //d = i_smine(d, i_sdSphere(p - vec3(0,level,0), 2), 4);
     d = i_smine(d, i_sdSphere(p, 2), 4);
     for (int i=0;i++<6;){
         d = i_smine(d, i_sdSphere(p - vec3(extent*sin(i+iTime),sin(iTime+iTime*i),extent*cos(i+iTime)),1), 4);
@@ -119,10 +131,8 @@ float sdf(vec3 p) {
 /** Numerical normal; again, from IQ's tutorial on the topic.
  * This _might_ compress best? At cost of +2 function evals.
  */
-vec3 normal_of_sdf(vec3 p)
+vec3 i_normal_of_sdf(vec3 p)
 {
-    const float eps = 0.001; // or some other value
-    vec2 h = vec2(eps,0);
     return normalize( vec3(sdf(p+h.xyy) - sdf(p-h.xyy),
                            sdf(p+h.yxy) - sdf(p-h.yxy),
                            sdf(p+h.yyx) - sdf(p-h.yyx) ) );
@@ -137,11 +147,51 @@ float march_sdf(vec3 Ro, vec3 Rd){
 //    for(int i = 0; (i++ < max_steps) && (t < max_t);){
     for(int i = 0; (i++ < max_steps);){
         float d = sdf(Ro+t*Rd);
-        if (d<0.001*t) break;
+        if (d<h.x*t) break;
         t += d;
     }
     return t;
 }
+
+void main()
+{
+    // Build the main logic here, inside main().
+    vec2 i_s = (2*gl_FragCoord.xy-u.yz)/u.z;
+
+    // Approach from positive z. orient screen as xy-plane:
+//    vec3 Ro = vec3(0,1,14-iTime/9);
+    vec3 Ro = vec3(0,0,9);
+    vec3 Rd = normalize(vec3(i_s,-3));
+
+    float t = march_sdf(Ro, Rd);
+    vec3 loc = Ro + t*Rd;
+    vec3 n = i_normal_of_sdf(loc);
+
+    // Just color by diffuse component:
+    vec3 light_dir = light_pos - loc;
+    float diff = max(0,dot(n, normalize(light_dir)));
+    vec3 c = vec3(.1,diff,.2);
+    //vec3 c = vec3(diff);
+
+    // // Try some reflection.. a lot of computation going on; slow..
+    // vec3 rdir = reflect(Rd,n);
+    // float t2 = march_sdf(loc +0.001*rdir, rdir);
+    // vec3 loc2 = loc + t2*rdir;
+    // vec3 n2 = normal_of_sdf(loc2);
+
+    // float shadow = soft_shadow(loc, light_dir, .001, 100, 4);
+    // float shadow2 = soft_shadow(loc2, light_dir, .001, 100, 4);
+
+    // vec3 c =  shadow * vec3(max(0,dot(n, light_dir))); 
+    // vec3 c2 = shadow2 * vec3(max(0,dot(n2, light_dir)));
+
+    // c = c+.5*c2;
+
+    // c = (max_t-t)/max_t * c;
+
+    gl_FragColor = fade * vec4(c,1);
+}
+
 
 // Ok.. One more experiment from tutorial.. gotta try some soft shadows.
 // From https://iquilezles.org/articles/rmshadows/ obviously..
@@ -172,44 +222,3 @@ float march_sdf(vec3 Ro, vec3 Rd){
 //     }
 //     return res;
 // }
-
-void main()
-{
-    // Build the main logic here, inside main().
-    vec2 s = (2*gl_FragCoord.xy-u.yz)/u.z;
-
-    // Set up a light direction, as in a far away extreme point light
-    //vec3 light_dir = normalize(vec3(1-iTime/10,1,-1));
-    vec3 light_dir = vec3(1-iTime/10,1,-1);
-
-    // Approach from positive z. orient screen as xy-plane:
-//    vec3 Ro = vec3(0,1,14-iTime/9);
-    vec3 Ro = vec3(0,0,9);
-    vec3 Rd = normalize(vec3(s,-3));
-
-    float t = march_sdf(Ro, Rd);
-    vec3 loc = Ro + t*Rd;
-    vec3 n = normal_of_sdf(loc);
-
-    // Just color by diffuse component:
-    float diff = max(0,dot(n, light_dir)) / log(length(loc));
-    vec3 c = vec3(.1,diff,.2);
-
-    // // Try some reflection.. a lot of computation going on; slow..
-    // vec3 rdir = reflect(Rd,n);
-    // float t2 = march_sdf(loc +0.001*rdir, rdir);
-    // vec3 loc2 = loc + t2*rdir;
-    // vec3 n2 = normal_of_sdf(loc2);
-
-    // float shadow = soft_shadow(loc, light_dir, .001, 100, 4);
-    // float shadow2 = soft_shadow(loc2, light_dir, .001, 100, 4);
-
-    // vec3 c =  shadow * vec3(max(0,dot(n, light_dir))); 
-    // vec3 c2 = shadow2 * vec3(max(0,dot(n2, light_dir)));
-
-    // c = c+.5*c2;
-
-    // c = (max_t-t)/max_t * c;
-
-    gl_FragColor = fade * vec4(c,1);
-}
