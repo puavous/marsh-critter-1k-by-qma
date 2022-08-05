@@ -1,8 +1,12 @@
 #version 140
 uniform ivec4 u;
 float iTime = u.x/1000.;  // Yep, name iTime is carried over from shadertoy :).
+// Idunno.. can we have some more definition stuff here? Should we? No idea.. just want an entry here and now 2022 asm...
 
-// ---------------------------------------------------------
+/* Let's make it clear that, once again, I'm using Inigo's treasure
+ * trove of tutorials and examples! */
+
+// -----------------------------------i----------------------
 // some one-liner functions that current Shader Minifier omits if unused.
 // /** Checker-board with 'density' squares on unit length.
 //  * For usual texture uv coordinates, [0,1]x[0,1] is a black square.
@@ -20,8 +24,7 @@ vec3 i_testTexture(vec2 uv) {
                vec3(uv.xy,0.0));
 }
 
-/* Normalized pixel coordinates (y in [-1,1], x follows aspect ratio).
- */
+/** Normalized pixel coordinates (y in [-1,1], x follows aspect ratio). */
 vec2 i_screenCoord(vec2 pix, vec2 resolution) {
     return (2*pix - resolution) / resolution.y;
 }
@@ -30,10 +33,6 @@ vec2 i_screenCoord(vec2 pix, vec2 resolution) {
 vec3 i_rtMiniPlane2(vec3 Ro, vec3 Rd, vec3 a, vec3 u, vec3 v) {
   return inverse(mat3(-u,-v,Rd))*(a-Ro);
 }
-
-
-/* Let's make it clear that, once again, I'm using Inigo's treasure
- * trove of tutorials and examples! */
 
 /** Sphere s with center and radius: (x, y, z, radius) */
 float i_sdSphereAt( vec3 p, vec4 s ) {
@@ -50,13 +49,6 @@ float i_sdFlatEarth(vec3 p, float y) {
     return p.y-y;
 }
 
-// /** Box; verbatim from Inigo's tutorial at https://iquilezles.org/articles/distfunctions/ */
-// float sdBox( vec3 p, vec3 b )
-// {
-//   vec3 q = abs(p) - b;
-//   return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
-// }
-
 /** From IQ's tutorial, but converted to one-liner.*/
 float i_sdVerticalCapsule( vec3 p, float h, float r ) {
   return length( p - vec3(0,clamp(p.y,0,h),0) ) - r;
@@ -72,55 +64,32 @@ float i_smin( float a, float b, float k ) {
     return -log2( exp2( -k*a ) + exp2( -k*b ) )/k;
 }
 
-// // Internally inlined, for size comparisons..
-// float smin( float a, float b, float k )
-// {
-//     return -log2( exp2( -k*a ) + exp2( -k*b ) )/k;
-// }
-
-// // Verbatim version from IQ's tutorial, to debug inlining issues...
-// float smin( float a, float b, float k )
-// {
-//     float res = exp2( -k*a ) + exp2( -k*b );
-//     return -log2( res )/k;
-// }
-
 // Version that uses e instead of 2.. maybe not correct, but minimal..
-float i_smine( float a, float b, float k )
-{
+float i_smine( float a, float b, float k ) {
     return -log( exp( -k*a ) + exp( -k*b ) )/k;
 }
 
 // basic intersect
-float i_intersect( float a, float b)
-{
+float i_intersect( float a, float b) {
     return max(a,b);
 }
 
 /** Infinite repetition, as "transformation of traversal point, tp" */
-vec3 i_tpRep( in vec3 p, in vec3 c)
-{
+vec3 i_tpRep( in vec3 p, in vec3 c) {
     return mod(p+0.5*c,c)-0.5*c;
 }
 
 // ---------------------------------------------------
 
 // Probably sticking with spheres this time, if I can fit 'en in the 1k..
-float sdf(vec3 p){
-    //float d = 1e9; // Start agglomerating from "infinity".
+float sdf(vec3 p) {
     float d = i_sdSphereAt(p, vec4(0,0,0,2));
-    //d = i_smine(d, i_sdSphereAt(p, vec4(0,0,0,2)), 3);
-    //d = i_smine(d, i_sdTorus(p, vec2(1,.2)), 3);
     for (int i=0;i<6;i++){
         d = i_smine(d, i_sdSphereAt(p, vec4(iTime/3*sin(i+iTime),sin(iTime+iTime*i),iTime/3*cos(i+iTime),1)), 4);
     }
     d = i_smine(d, i_sdFlatEarth(p, 0-iTime/10), 6);
-    //d = i_opUnion(d, i_sdFlatEarth(p, 0-iTime/10));
-    //float i_a = i_sdSphereAt(p, vec4(0,0,0,2));
-    // float i_b = i_sdSphereAt(p, vec4(3+2*sin(iTime),0,0,1));
     return d;
 }
-
 
 // /** Numerical normal; again, from IQ's tutorial on the topic. */
 // vec3 normal_of_sdf(vec3 p)
