@@ -175,19 +175,19 @@ float march_sdf(vec3 Ro, vec3 Rd){
 
 // And then the soft shadow "for free".
 // Still from https://iquilezles.org/articles/rmshadows/ obviously..
-float soft_shadow( in vec3 ro, in vec3 rd, float mint, float maxt, float k )
-{
-    float res = 1.0;
-    for( float t=mint; t<maxt; )
-    {
-        float h = sdf(ro + rd*t);
-        if( h<0.001 )
-            return 0.0;
-        res = min( res, k*h/t );
-        t += h;
-    }
-    return res;
-}
+// float soft_shadow( in vec3 ro, in vec3 rd, float mint, float maxt, float k )
+// {
+//     float res = 1.0;
+//     for( float t=mint; t<maxt; )
+//     {
+//         float h = sdf(ro + rd*t);
+//         if( h<0.001 )
+//             return 0.0;
+//         res = min( res, k*h/t );
+//         t += h;
+//     }
+//     return res;
+// }
 
 void main()
 {
@@ -205,20 +205,25 @@ void main()
     vec3 loc = Ro+t*Rd;
     vec3 n = normal_of_sdf(loc);
 
-    // Try some reflection.. a lot of computation going on; slow..
-    vec3 rdir = reflect(Rd,n);
-    float t2 = march_sdf(loc +0.001*rdir, rdir);
-    vec3 loc2 = loc + t2*rdir;
-    vec3 n2 = normal_of_sdf(loc2);
+    // Just color by diffuse component:
+    vec3 c = vec3(max(0,dot(n, light_dir)));
 
-    float shadow = soft_shadow(loc, light_dir, .001, 100, 4);
-    float shadow2 = soft_shadow(loc2, light_dir, .001, 100, 4);
+    // // Try some reflection.. a lot of computation going on; slow..
+    // vec3 rdir = reflect(Rd,n);
+    // float t2 = march_sdf(loc +0.001*rdir, rdir);
+    // vec3 loc2 = loc + t2*rdir;
+    // vec3 n2 = normal_of_sdf(loc2);
 
-    vec3 c =  shadow * vec3(max(0,dot(n, light_dir))); 
-    vec3 c2 = shadow2 * vec3(max(0,dot(n2, light_dir)));
+    // float shadow = soft_shadow(loc, light_dir, .001, 100, 4);
+    // float shadow2 = soft_shadow(loc2, light_dir, .001, 100, 4);
 
-    c = c+.5*c2;
+    // vec3 c =  shadow * vec3(max(0,dot(n, light_dir))); 
+    // vec3 c2 = shadow2 * vec3(max(0,dot(n2, light_dir)));
 
-    c = (max_t-t)/max_t * c;
+    // c = c+.5*c2;
+
+    // c = (max_t-t)/max_t * c;
+
+
     gl_FragColor = vec4(c,1);
 }
