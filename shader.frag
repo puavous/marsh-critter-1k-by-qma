@@ -99,7 +99,8 @@ float iTime = u.x/1000.;  // Yep, name iTime is carried over from shadertoy :).
 // Idunno.. can we have some more definition stuff here? Should we? No idea.. just want an entry here and now 2022 asm...
 // Go with this idea now:
 float extent = 1+sin(iTime)+iTime/20;
-float fade = smoothstep(0,4,iTime) - smoothstep(20,24,iTime);
+//float fade = smoothstep(0,4,iTime) - smoothstep(20,24,iTime);
+float fade = 1-smoothstep(20,24,iTime);
 
 
 // Probably sticking with spheres this time, if I can fit 'en in the 1k..
