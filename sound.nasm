@@ -195,11 +195,13 @@ read_from_sequence:
 	;; Read next byte from sequence to DL, and update counter:
 	lodsb
 
+%if 0
 	;; Hack silence after end of show:
 	cmp	ecx, 0xf0000 ; some seconds.. 48000*20
 	jl	noupd
 	xor	al,al
 noupd:
+%endif
 	;; Dig a note somehow.. and have ZF indicate pause somehow.
 ;;	cmp	al, 0
 	;; Idea: Rotate this mask pattern every now and then? Maybe based
@@ -229,12 +231,14 @@ do_sample:
    	fimul	dword [SPAR(syn_env_state)]	; (notefreq*iphase)
 	;; Sine wave - tiniest signal I can think of in x87..
 	fsin
-
+%if 0
 	;; Amplitude envelope costs some 9 bytes:
 	fild	dword [SCONST(synconst_ticklen)]
 	fisub	dword [SPAR(syn_env_state)]
 	fidiv	dword [SCONST(synconst_ticklen)]
 	fmulp
+%endif
+
 %if 0
 	;; Saw wave.. aliasing a lot for good and bad..
 	fld	st0			; (fall note*iphase note*iphase)
@@ -293,6 +297,7 @@ synconst_delayvol:
 	;;dd	0.5		; 0x3f000000
 	dd	0.25
 synconst_duration:
-	dd	0x003f0000	; 0x3f0000 samples @48kHz is about 86 seconds
+;;	dd	0x003f0000	; 0x3f0000 samples @48kHz is about 86 seconds
+	dd	0x110000 ; Close to 24 seconds.. maximum interesting time..
 	;; I need to cut it at some point - both video and audio..
 ;;	dd	0x0003f000	; 0x03f000 samples @48kHz is a short verse
