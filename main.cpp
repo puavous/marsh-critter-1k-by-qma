@@ -117,7 +117,7 @@ void entrypoint( void )
         do
         {
             DWORD t = timeGetTime() - tbeg;
-            // t = 15345; // Frozen time for taking a screenshot..
+           // t = 19000; // Frozen time for taking a screenshot..
             oglUniform3i(uloc, t, XRES, YRES);
             glRects(-1, -1, 1, 1);
             SwapBuffers(hDC);

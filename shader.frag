@@ -102,14 +102,14 @@ uniform ivec3 u;
 
 float iTime = u.x/1000.;  // Yep, name iTime is carried over from shadertoy :).
 
-float extent = 1+iTime/9;
+float extent = 1+iTime/9-sin(iTime);
 
-vec3 critter_position = vec3(2*sin(iTime), sin(iTime)+5*sin(iTime/7)-5, 2*iTime-55);
+vec3 critter_position = vec3(2*sin(iTime), sin(iTime)+6*sin(iTime/7)-4, 2*iTime-55);
 
 // Set up a light..
 //vec3 light_dir = normalize(vec3(1-iTime/10,1,-1));
 //vec3 light_pos = vec3(1-iTime/10,1,-1);
-vec3 light_pos = vec3(6,6,0);
+vec3 light_pos = vec3(5,5,-iTime);
 
 //vec2 h = vec2(eps,0);
 vec3 h = vec3(eps,0,0);
@@ -122,7 +122,7 @@ float fade = 1-smoothstep(20,24,iTime);
 // Probably sticking with spheres this time, if I can fit 'em in the 1k..
 float sdf(vec3 p) {
 //    float d = i_sdFlatEarth(p, -2);
-    float d = p.y+2+sin(p.z-iTime)/9;
+    float d = p.y+1+sin(p.z-iTime)/9;
     p -= critter_position;
     //d = i_smine(d, i_sdSphere(p - vec3(0,level,0), 2), 4);
     d = i_smine(d, i_sdSphere(p, 2), 4);
@@ -167,7 +167,7 @@ void main()
     // Approach from positive z. orient screen as xy-plane:
 //    vec3 Ro = vec3(0,1,14-iTime/9);
     vec3 Ro = vec3(0);
-    vec3 Rd = normalize(vec3(i_s,-3));
+    vec3 Rd = normalize(vec3(i_s,-4));
 
     float t = march_sdf(Ro, Rd);
     vec3 loc = Ro + t*Rd;
