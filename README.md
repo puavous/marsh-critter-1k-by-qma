@@ -1,5 +1,5 @@
 # Marsh Critter
-My contributionto 1k intro compo in Assembly 2022. Repository will be made public after the compo is shown.
+My contribution to the 1k intro compo in Assembly 2022. Repository was made public after the compo was shown on 6 August, 2022.
 
 To build, you need to get stuff:
   - glext.h from https://registry.khronos.org/OpenGL/api/GL/glext.h or wherever
